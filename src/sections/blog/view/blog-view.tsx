@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useFetchTemplates } from 'src/hooks/useFetchTemplates';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -16,13 +17,18 @@ import { PostSort } from '../post-sort';
 import { PostSearch } from '../post-search';
 
 // ----------------------------------------------------------------------
+const API_URL = "http://localhost:8000"; // FastAPI 백엔드 주소
 
 export function BlogView() {
   const [sortBy, setSortBy] = useState('latest');
+  const { templates, loading, error } = useFetchTemplates(); // ✅ 커스텀 훅 사용
 
   const handleSort = useCallback((newSort: string) => {
     setSortBy(newSort);
   }, []);
+
+  if (loading) return <Typography>Loading...</Typography>;
+  if (error) return <Typography>Error: {error}</Typography>;
 
   return (
     <DashboardContent>
@@ -40,7 +46,7 @@ export function BlogView() {
       </Box>
 
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 5 }}>
-        <PostSearch posts={_posts} />
+        <PostSearch posts={templates} />
         <PostSort
           sortBy={sortBy}
           onSort={handleSort}
@@ -53,7 +59,7 @@ export function BlogView() {
       </Box>
 
       <Grid container spacing={3}>
-        {_posts.map((post, index) => {
+        {templates.map((post, index) => {
           const latestPostLarge = index === 0;
           const latestPost = index === 1 || index === 2;
 

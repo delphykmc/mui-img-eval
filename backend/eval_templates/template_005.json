@@ -1,0 +1,18 @@
+[
+  {
+    "template_id": "005",
+    "template_name": "Bayer DTC",
+    "start_date": "03/05/2025",
+    "end_date": "03/31/2025",
+    "description": "Bayer DTC",
+    "image_dir": "",
+    "coverUrl": "/assets/images/cover/cover-5.webp",
+    "query": [
+      "query1",
+      "query2"
+    ],
+    "created_at": "03/10/2025",
+    "updated_at": "03/11/2025",
+    "created_by": "delphykmc@gmail.com"
+  }
+]

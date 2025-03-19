@@ -22,6 +22,8 @@ export type PostItemProps = {
   coverUrl: string;
   totalViews: number;
   description: string;
+  startDate: string | number | null;
+  endDate: string | number | null;
   totalShares: number;
   totalComments: number;
   totalFavorites: number;
@@ -62,7 +64,7 @@ export function PostItem({
   const renderTitle = (
     <Link
       color="inherit"
-      variant="subtitle2"
+      variant="subtitle1"
       underline="hover"
       sx={{
         height: 44,
@@ -141,7 +143,19 @@ export function PostItem({
         }),
       }}
     >
-      {fDate(post.postedAt)}
+      {fDate(post.startDate)} ~ {fDate(post.endDate)}
+    </Typography>
+  );
+
+  const renderDescription = (
+    <Typography
+      variant="body2"
+      sx={{
+        color: 'text.secondary',
+        ...(latestPostLarge && { color: 'common.white' }),
+      }}
+    >
+      {post.description}
     </Typography>
   );
 
@@ -203,6 +217,7 @@ export function PostItem({
       >
         {renderDate}
         {renderTitle}
+        {renderDescription}
         {renderInfo}
       </Box>
     </Card>

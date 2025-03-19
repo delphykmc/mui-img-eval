@@ -1,0 +1,18 @@
+[
+  {
+    "template_id": "007",
+    "template_name": "DVNR (2025)",
+    "start_date": "03/07/2025",
+    "end_date": "03/31/2025",
+    "description": "Single Capture GN3 pre-eval",
+    "image_dir": "",
+    "coverUrl": "/assets/images/cover/cover-7.webp",
+    "query": [
+      "query1",
+      "query2"
+    ],
+    "created_at": "03/10/2025",
+    "updated_at": "03/11/2025",
+    "created_by": "delphykmc@gmail.com"
+  }
+]
