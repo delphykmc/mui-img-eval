@@ -2,7 +2,7 @@ import { Helmet } from 'react-helmet-async';
 
 import { CONFIG } from 'src/config-global';
 
-import { EvalView } from 'src/sections/blog/view';
+import { EvalView } from 'src/sections/eval/view';
 
 // ----------------------------------------------------------------------
 
