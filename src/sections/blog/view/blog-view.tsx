@@ -21,6 +21,7 @@ const API_URL = "http://localhost:8000"; // FastAPI 백엔드 주소
 
 export function BlogView() {
   const [sortBy, setSortBy] = useState('latest');
+  const [searchQuery, setSearchQuery] = useState(''); // ✅ 검색 상태 추가
   const { templates, loading, error } = useFetchTemplates(); // ✅ 커스텀 훅 사용
 
   const handleSort = useCallback((newSort: string) => {
@@ -30,8 +31,14 @@ export function BlogView() {
   if (loading) return <Typography>Loading...</Typography>;
   if (error) return <Typography>Error: {error}</Typography>;
 
+  // ✅ 검색 기능: title 또는 description에 검색어가 포함된 항목 필터링
+  const filteredTemplates = templates.filter((post) =>
+    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // ✅ 정렬 로직 추가
-  const sortedTemplates = [...templates].sort((a, b) => {
+  const sortedTemplates = [...filteredTemplates].sort((a, b) => {
     if (sortBy === 'latest') {
       return new Date(b.startDate).getTime() - new Date(a.startDate).getTime(); // 최신순 (내림차순)
     }
@@ -60,7 +67,7 @@ export function BlogView() {
       </Box>
 
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 5 }}>
-        <PostSearch posts={templates} />
+        <PostSearch posts={templates} onSearch={setSearchQuery} />
         <PostSort
           sortBy={sortBy}
           onSort={handleSort}
@@ -68,9 +75,6 @@ export function BlogView() {
             { value: 'latest', label: 'Latest' },
             { value: 'title', label: 'Title' },
             { value: 'oldest', label: 'Oldest' },
-//             { value: 'latest', label: 'Latest' },
-//             { value: 'popular', label: 'Popular' },
-//             { value: 'oldest', label: 'Oldest' },
           ]}
         />
       </Box>
