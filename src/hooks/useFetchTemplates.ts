@@ -33,6 +33,9 @@ export function useFetchTemplates() {
             createdAt: template.created_at,
             startDate: template.start_date || "N/A",
             endDate: template.end_date || "N/A",
+            totalViews: 8829,
+            totalComments: 7977,
+            totalShares: 8556,
             author: {
               name: template.created_by ? template.created_by.split('@')[0] : "Unknown",
               avatarUrl: `/assets/images/avatar/avatar-${parseInt(template.template_id, 10)}.webp`,

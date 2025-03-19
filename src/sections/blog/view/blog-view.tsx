@@ -30,6 +30,20 @@ export function BlogView() {
   if (loading) return <Typography>Loading...</Typography>;
   if (error) return <Typography>Error: {error}</Typography>;
 
+  // ✅ 정렬 로직 추가
+  const sortedTemplates = [...templates].sort((a, b) => {
+    if (sortBy === 'latest') {
+      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime(); // 최신순 (내림차순)
+    }
+    if (sortBy === 'oldest') {
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime(); // 오래된순 (오름차순)
+    }
+    if (sortBy === 'title') {
+      return a.title.localeCompare(b.title); // 타이틀 정렬 (알파벳 오름차순)
+    }
+    return 0;
+  });
+
   return (
     <DashboardContent>
       <Box display="flex" alignItems="center" mb={5}>
@@ -52,14 +66,17 @@ export function BlogView() {
           onSort={handleSort}
           options={[
             { value: 'latest', label: 'Latest' },
-            { value: 'popular', label: 'Popular' },
+            { value: 'title', label: 'Title' },
             { value: 'oldest', label: 'Oldest' },
+//             { value: 'latest', label: 'Latest' },
+//             { value: 'popular', label: 'Popular' },
+//             { value: 'oldest', label: 'Oldest' },
           ]}
         />
       </Box>
 
       <Grid container spacing={3}>
-        {templates.map((post, index) => {
+        {sortedTemplates.map((post, index) => {
           const latestPostLarge = index === 0;
           const latestPost = index === 1 || index === 2;
 

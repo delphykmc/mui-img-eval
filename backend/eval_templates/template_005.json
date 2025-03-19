@@ -4,7 +4,7 @@
     "template_name": "Bayer DTC",
     "start_date": "03/05/2025",
     "end_date": "03/31/2025",
-    "description": "Bayer DTC",
+    "description": "Bayer DTC: Legacy vs DL-based",
     "image_dir": "",
     "coverUrl": "/assets/images/cover/cover-5.webp",
     "query": [
