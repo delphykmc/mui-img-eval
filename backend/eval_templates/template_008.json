@@ -1,0 +1,18 @@
+[
+  {
+    "template_id": "008",
+    "template_name": "Smart Scaler (2024)",
+    "start_date": "03/07/2024",
+    "end_date": "03/31/2024",
+    "description": "Smart Scaler vs legacy",
+    "image_dir": "",
+    "coverUrl": "/assets/images/cover/cover-8.webp",
+    "query": [
+      "query1",
+      "query2"
+    ],
+    "created_at": "03/10/2024",
+    "updated_at": "03/11/2024",
+    "created_by": "delphykmc@gmail.com"
+  }
+]
