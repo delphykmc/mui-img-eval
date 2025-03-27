@@ -14,6 +14,8 @@ import { varAlpha } from 'src/theme/styles';
 import { Iconify } from 'src/components/iconify';
 import { SvgColor } from 'src/components/svg-color';
 
+import { useNavigate } from 'react-router-dom';
+
 // ----------------------------------------------------------------------
 
 export type PostItemProps = {
@@ -45,6 +47,12 @@ export function PostItem({
   latestPost: boolean;
   latestPostLarge: boolean;
 }) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/eval/${post.id}`);        // ✅ 페이지 이동
+  };
+
   const renderAvatar = (
     <Avatar
       alt={post.author.name}
@@ -177,6 +185,7 @@ export function PostItem({
 
   return (
     <Card
+      onClick={handleClick}
       sx={{
         cursor: 'pointer',
         borderRadius: 2,
