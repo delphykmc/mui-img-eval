@@ -50,7 +50,7 @@ export function PostItem({
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/eval/${post.id}`);        // ✅ 페이지 이동
+    navigate(`/eval/${post.id}/images`);        // ✅ 페이지 이동
   };
 
   const renderAvatar = (

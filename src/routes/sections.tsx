@@ -16,7 +16,9 @@ export const UserPage = lazy(() => import('src/pages/user'));
 export const SignInPage = lazy(() => import('src/pages/sign-in'));
 export const ProductsPage = lazy(() => import('src/pages/products'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
-export const EvalDetailPage = lazy(() => import('src/pages/eval-detail'));
+export const EvalImageListPage = lazy(() => import('src/pages/eval-image-list'));
+export const EvalEvaluatePage = lazy(() => import('src/pages/eval-evaluate'));
+
 
 // ----------------------------------------------------------------------
 
@@ -48,7 +50,8 @@ export function Router() {
         { path: 'user', element: <UserPage /> },
         { path: 'products', element: <ProductsPage /> },
         { path: 'eval', element: <EvalPage /> },
-        { path: 'eval/:id', element: <EvalDetailPage /> },
+        { path: 'eval/:id/images', element: <EvalImageListPage /> },
+        { path: 'eval/:id/evaluate', element: <EvalEvaluatePage /> },
       ],
     },
     {
