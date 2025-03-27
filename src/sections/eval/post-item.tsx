@@ -176,7 +176,20 @@ export function PostItem({
   );
 
   return (
-    <Card sx={sx} {...other}>
+    <Card
+      sx={{
+        cursor: 'pointer',
+        borderRadius: 2,
+        overflow: 'hidden',
+        transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease',
+        '&:hover': {
+          transform: 'scale(1.035)',
+          boxShadow: 10,
+        },
+        ...sx,
+      }}
+      {...other}
+    >
       <Box
         sx={(theme) => ({
           position: 'relative',
