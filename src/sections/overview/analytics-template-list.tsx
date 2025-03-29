@@ -13,7 +13,11 @@ import { fToNow } from 'src/utils/format-time';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
+import { useNavigate } from 'react-router-dom';
+
 import type { PostItemProps } from '../eval/post-item';
+
+
 
 // ----------------------------------------------------------------------
 
@@ -23,7 +27,9 @@ type Props = CardProps & {
   list: PostItemProps[];
 };
 
-export function AnalyticsNews({ title, subheader, list, ...other }: Props) {
+export function AnalyticsTemplateList({ title, subheader, list, ...other }: Props) {
+  const navigate = useNavigate(); // ✅ 추가
+
   return (
     <Card {...other}>
       <CardHeader title={title} subheader={subheader} sx={{ mb: 1 }} />
@@ -40,7 +46,8 @@ export function AnalyticsNews({ title, subheader, list, ...other }: Props) {
         <Button
           size="small"
           color="inherit"
-          endIcon={<Iconify icon="eva:arrow-ios-forward-fill" width={18} sx={{ ml: -0.5 }} />}
+          endIcon={<Iconify icon="eva:arrow-ios-forward-fill" width={18} sx={{ ml: -1.5 }} />}
+          onClick={() => navigate('/eval')} // ✅ 클릭 시 이동
         >
           View all
         </Button>
@@ -55,7 +62,7 @@ function PostItem({ sx, item, ...other }: BoxProps & { item: Props['list'][numbe
   return (
     <Box
       sx={{
-        py: 2,
+        py: 1,
         px: 3,
         gap: 2,
         display: 'flex',

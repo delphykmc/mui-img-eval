@@ -6,9 +6,17 @@ import Typography from '@mui/material/Typography';
 import { _tasks, _timeline } from 'src/_mock';
 import { DashboardContent } from 'src/layouts/dashboard';
 
-import { AnalyticsNews } from '../analytics-news';
+import PermMediaOutlinedIcon from '@mui/icons-material/PermMediaOutlined';
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+
+import { AnalyticsTemplateList } from '../analytics-template-list';
+import { AnalyticsTemplateRatio } from '../analytics-template-ratio';
+
+
 import { AnalyticsTasks } from '../analytics-tasks';
-import { AnalyticsCurrentVisits } from '../analytics-current-visits';
+
 import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
@@ -33,10 +41,12 @@ export function OverviewAnalyticsView() {
       <Grid container spacing={3}>
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Weekly sales"
+            // title="Weekly sales"
+            title="Registered Templates"
             percent={2.6}
             total={714000}
-            icon={<img alt="icon" src="/assets/icons/glass/ic-glass-bag.svg" />}
+            // icon={<img alt="icon" src="/assets/icons/glass/ic-glass-bag.svg" />}
+            icon={<PermMediaOutlinedIcon sx={{ fontSize: 36 }} />}
             chart={{
               categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
               series: [22, 8, 35, 50, 82, 84, 77, 12],
@@ -50,7 +60,8 @@ export function OverviewAnalyticsView() {
             percent={-0.1}
             total={1352831}
             color="secondary"
-            icon={<img alt="icon" src="/assets/icons/glass/ic-glass-users.svg" />}
+            // icon={<img alt="icon" src="/assets/icons/glass/ic-glass-users.svg" />}
+            icon={<PersonAddOutlinedIcon sx={{ fontSize: 36 }} />}
             chart={{
               categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
               series: [56, 47, 40, 62, 73, 30, 23, 54],
@@ -60,11 +71,13 @@ export function OverviewAnalyticsView() {
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Purchase orders"
+            // title="Purchase orders"
+            title="Evaluations"
             percent={2.8}
             total={1723315}
             color="warning"
-            icon={<img alt="icon" src="/assets/icons/glass/ic-glass-buy.svg" />}
+            // icon={<img alt="icon" src="/assets/icons/glass/ic-glass-buy.svg" />}
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 36 }} />}
             chart={{
               categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
               series: [40, 70, 50, 28, 70, 75, 7, 64],
@@ -74,11 +87,13 @@ export function OverviewAnalyticsView() {
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Messages"
+            // title="Messages"
+            title="Visitors"
             percent={3.6}
             total={234}
             color="error"
-            icon={<img alt="icon" src="/assets/icons/glass/ic-glass-message.svg" />}
+            // icon={<img alt="icon" src="/assets/icons/glass/ic-glass-message.svg" />}
+            icon={<GroupsOutlinedIcon sx={{ fontSize: 36 }} />}
             chart={{
               categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
               series: [56, 30, 23, 54, 47, 40, 62, 73],
@@ -87,17 +102,22 @@ export function OverviewAnalyticsView() {
         </Grid>
 
         <Grid xs={12} md={6} lg={4}>
-          <AnalyticsCurrentVisits
-            title="Current visits"
+          <AnalyticsTemplateRatio
+            // title="Current visits"
+            title="Current templates"
             chart={{
               series: [
-                { label: 'America', value: 3500 },
-                { label: 'Asia', value: 2500 },
-                { label: 'Europe', value: 1500 },
-                { label: 'Africa', value: 500 },
+                { label: 'Solomon', value: 1 },
+                { label: 'Thetis', value: 2 },
+                { label: 'Ulysses', value: 7 },
+                { label: 'Vanguard', value: 2 },
               ],
             }}
           />
+        </Grid>
+
+        <Grid xs={12} md={6} lg={8}>
+          <AnalyticsTemplateList title="Templates" list={templates.slice(0, 5)} />
         </Grid>
 
         <Grid xs={12} md={6} lg={8}>
@@ -109,20 +129,6 @@ export function OverviewAnalyticsView() {
               series: [
                 { name: 'Team A', data: [43, 33, 22, 37, 67, 68, 37, 24, 55] },
                 { name: 'Team B', data: [51, 70, 47, 67, 40, 37, 24, 70, 24] },
-              ],
-            }}
-          />
-        </Grid>
-
-        <Grid xs={12} md={6} lg={8}>
-          <AnalyticsConversionRates
-            title="Conversion rates"
-            subheader="(+43%) than last year"
-            chart={{
-              categories: ['Italy', 'Japan', 'China', 'Canada', 'France'],
-              series: [
-                { name: '2022', data: [44, 55, 41, 64, 22] },
-                { name: '2023', data: [53, 32, 33, 52, 13] },
               ],
             }}
           />
@@ -140,14 +146,28 @@ export function OverviewAnalyticsView() {
               ],
             }}
           />
-        </Grid>
+        </Grid>   
 
         <Grid xs={12} md={6} lg={8}>
-          <AnalyticsNews title="News" list={templates.slice(0, 5)} />
+          <AnalyticsConversionRates
+            title="Conversion rates"
+            subheader="(+43%) than last year"
+            chart={{
+              categories: ['Italy', 'Japan', 'China', 'Canada', 'France'],
+              series: [
+                { name: '2022', data: [44, 55, 41, 64, 22] },
+                { name: '2023', data: [53, 32, 33, 52, 13] },
+              ],
+            }}
+          />
         </Grid>
 
         <Grid xs={12} md={6} lg={4}>
           <AnalyticsOrderTimeline title="Order timeline" list={_timeline} />
+        </Grid>
+
+        <Grid xs={12} md={6} lg={8}>
+          <AnalyticsTasks title="Tasks" list={_tasks} />
         </Grid>
 
         <Grid xs={12} md={6} lg={4}>
@@ -160,12 +180,11 @@ export function OverviewAnalyticsView() {
               { value: 'twitter', label: 'Twitter', total: 443232 },
             ]}
           />
-        </Grid>
+        </Grid> 
 
-        <Grid xs={12} md={6} lg={8}>
-          <AnalyticsTasks title="Tasks" list={_tasks} />
-        </Grid>
       </Grid>
+
+
     </DashboardContent>
   );
 }

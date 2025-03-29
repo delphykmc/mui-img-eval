@@ -25,7 +25,7 @@ type Props = CardProps & {
   };
 };
 
-export function AnalyticsCurrentVisits({ title, subheader, chart, ...other }: Props) {
+export function AnalyticsTemplateRatio({ title, subheader, chart, ...other }: Props) {
   const theme = useTheme();
 
   const chartSeries = chart.series.map((item) => item.value);
@@ -61,8 +61,8 @@ export function AnalyticsCurrentVisits({ title, subheader, chart, ...other }: Pr
         type="pie"
         series={chartSeries}
         options={chartOptions}
-        width={{ xs: 240, xl: 260 }}
-        height={{ xs: 240, xl: 260 }}
+        width={{ xs: 240, xl: 280 }}
+        height={{ xs: 240, xl: 310 }}
         sx={{ my: 6, mx: 'auto' }}
       />
 
