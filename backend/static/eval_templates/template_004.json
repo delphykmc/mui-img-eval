@@ -5,7 +5,7 @@
     "start_date": "03/04/2025",
     "end_date": "03/31/2025",
     "description": "DMSC legacy vs DL-based",
-    "image_dir": "",
+    "image_dir": "static/sample",
     "coverUrl": "/assets/images/cover/cover-4.webp",
     "query": [
       "query1",

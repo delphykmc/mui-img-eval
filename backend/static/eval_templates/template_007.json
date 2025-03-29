@@ -5,7 +5,7 @@
     "start_date": "03/07/2025",
     "end_date": "03/31/2025",
     "description": "DVNR quality comparison",
-    "image_dir": "",
+    "image_dir": "static/sample",
     "coverUrl": "/assets/images/cover/cover-7.webp",
     "query": [
       "query1",

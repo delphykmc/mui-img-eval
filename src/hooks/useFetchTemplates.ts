@@ -6,7 +6,6 @@ export function useFetchTemplates() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  console.log("✅ API_URL from env:", API_URL);
 
   useEffect(() => {
     setLoading(true);
