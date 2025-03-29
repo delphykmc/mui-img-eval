@@ -17,57 +17,74 @@ import { DashboardContent } from 'src/layouts/dashboard';
 const API_URL = import.meta.env.VITE_API_URL;
 
 export function EvalCompareView() {
-  const { id: templateId } = useParams(); // templateId from URL
+  const { id: templateId } = useParams();
   const [imagePairs, setImagePairs] = useState<{ a: string; b: string }[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [threshold, setThreshold] = useState(20);
-  const [flip, setFlip] = useState(false); // 좌우 뒤집기
+  const [flip, setFlip] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
 
   const canvasARef = useRef<HTMLCanvasElement>(null);
   const canvasBRef = useRef<HTMLCanvasElement>(null);
   const canvasDiffRef = useRef<HTMLCanvasElement>(null);
 
-  const selected = imagePairs[selectedIndex];
-  const aUrl = selected ? `${API_URL}/static/sample/${selected.a}` : '';
-  const bUrl = selected ? `${API_URL}/static/sample/${selected.b}` : '';
-  const diffUrl = selected
-    ? `${API_URL}/diff_image?img1=${selected.a}&img2=${selected.b}&threshold=${threshold}`
-    : '';
+  const aImage = useRef<HTMLImageElement | null>(null);
+  const bImage = useRef<HTMLImageElement | null>(null);
+  const diffImage = useRef<HTMLImageElement | null>(null);
 
-  // Load image into canvas
-  const drawImageToCanvas = useCallback(
-    (url: string, canvasRef: React.RefObject<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+  const selected = imagePairs[selectedIndex];
+
+  const loadImage = (url: string, ref: React.MutableRefObject<HTMLImageElement | null>, callback: () => void) => {
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+      ref.current = img;
+      callback();
+    };
+  };
+
+  const drawToCanvas = useCallback(
+    (ref: React.RefObject<HTMLCanvasElement>, imgRef: React.MutableRefObject<HTMLImageElement | null>) => {
+      const canvas = ref.current;
+      const img = imgRef.current;
+      if (!canvas || !img) return;
 
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const img = new Image();
-      img.src = url;
-      img.onload = () => {
-        const width = img.width * zoomLevel;
-        const height = img.height * zoomLevel;
+      const width = img.width * zoomLevel;
+      const height = img.height * zoomLevel;
 
-        canvas.width = width;
-        canvas.height = height;
+      canvas.width = width;
+      canvas.height = height;
 
-        ctx.imageSmoothingEnabled = false; // ✅ Nearest neighbor
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-      };
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
     },
     [zoomLevel]
   );
 
+  const renderAll = useCallback(() => {
+    if (!selected) return;
+    drawToCanvas(canvasARef, flip ? bImage : aImage);
+    drawToCanvas(canvasBRef, flip ? aImage : bImage);
+    drawToCanvas(canvasDiffRef, diffImage);
+  }, [selected, flip, drawToCanvas]);
+
+  // Load image pair on change
   useEffect(() => {
     if (!selected) return;
-    drawImageToCanvas(flip ? bUrl : aUrl, canvasARef);
-    drawImageToCanvas(flip ? aUrl : bUrl, canvasBRef);
-    drawImageToCanvas(diffUrl, canvasDiffRef);
-  }, [selected, drawImageToCanvas, flip, diffUrl, aUrl, bUrl]);
+    const aUrl = `${API_URL}/static/sample/${selected.a}`;
+    const bUrl = `${API_URL}/static/sample/${selected.b}`;
+    const diffUrl = `${API_URL}/diff_image?img1=${selected.a}&img2=${selected.b}&threshold=${threshold}`;
 
+    loadImage(aUrl, aImage, renderAll);
+    loadImage(bUrl, bImage, renderAll);
+    loadImage(diffUrl, diffImage, renderAll);
+  }, [selected, threshold, renderAll]);
+
+  // Fetch image pairs
   useEffect(() => {
     const fetchPairs = async () => {
       try {
@@ -78,16 +95,20 @@ export function EvalCompareView() {
         console.error("❌ Failed to fetch image pairs", err);
       }
     };
-
     fetchPairs();
   }, [templateId]);
 
-  // 공통 zoom 핸들러
+  // Zoom on wheel
   const handleWheelZoom = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoomLevel((prev) => Math.min(Math.max(prev + delta, 0.5), 5));
+    const newZoom = Math.min(Math.max(zoomLevel + delta, 0.5), 5);
+    setZoomLevel(newZoom);
   };
+
+  useEffect(() => {
+    renderAll();
+  }, [renderAll]);
 
   return (
     <DashboardContent>
@@ -95,9 +116,7 @@ export function EvalCompareView() {
         Evaluation Compare View
       </Typography>
 
-      {/* 상단 제어 UI */}
       <Box display="flex" gap={2} alignItems="center" sx={{ mb: 3 }}>
-        {/* Combo Box */}
         <FormControl sx={{ minWidth: 200 }}>
           <Select
             value={selectedIndex}
@@ -111,7 +130,6 @@ export function EvalCompareView() {
           </Select>
         </FormControl>
 
-        {/* Threshold 입력 */}
         <TextField
           label="Threshold"
           type="number"
@@ -120,29 +138,25 @@ export function EvalCompareView() {
           sx={{ width: 120 }}
         />
 
-        {/* Flip 좌우 전환 */}
         <IconButton onClick={() => setFlip(!flip)}>
           <SwapHorizIcon />
         </IconButton>
       </Box>
 
-      {/* 이미지 비교 Grid */}
       {selected && (
         <Grid container spacing={2}>
           <Grid item xs={4}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              {flip ? "Image B" : "Image A"}
+              {flip ? 'Image B' : 'Image A'}
             </Typography>
             <canvas ref={canvasARef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
           </Grid>
-
           <Grid item xs={4}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              {flip ? "Image A" : "Image B"}
+              {flip ? 'Image A' : 'Image B'}
             </Typography>
             <canvas ref={canvasBRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
           </Grid>
-
           <Grid item xs={4}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               Diff
