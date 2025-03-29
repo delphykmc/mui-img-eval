@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+// src/sections/eval/view/eval-compare-view.tsx
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
@@ -8,19 +9,64 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
+import IconButton from '@mui/material/IconButton';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export function EvalCompareView() {
-  const { id: templateId } = useParams();
+  const { id: templateId } = useParams(); // templateId from URL
   const [imagePairs, setImagePairs] = useState<{ a: string; b: string }[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [tolerance, setTolerance] = useState(20); // ✅ tolerance state
-  const [swap, setSwap] = useState(false); // ✅ swap toggle
+  const [threshold, setThreshold] = useState(20);
+  const [flip, setFlip] = useState(false); // 좌우 뒤집기
+  const [zoomLevel, setZoomLevel] = useState(1);
+
+  const canvasARef = useRef<HTMLCanvasElement>(null);
+  const canvasBRef = useRef<HTMLCanvasElement>(null);
+  const canvasDiffRef = useRef<HTMLCanvasElement>(null);
+
+  const selected = imagePairs[selectedIndex];
+  const aUrl = selected ? `${API_URL}/static/sample/${selected.a}` : '';
+  const bUrl = selected ? `${API_URL}/static/sample/${selected.b}` : '';
+  const diffUrl = selected
+    ? `${API_URL}/diff_image?img1=${selected.a}&img2=${selected.b}&threshold=${threshold}`
+    : '';
+
+  // Load image into canvas
+  const drawImageToCanvas = useCallback(
+    (url: string, canvasRef: React.RefObject<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        const width = img.width * zoomLevel;
+        const height = img.height * zoomLevel;
+
+        canvas.width = width;
+        canvas.height = height;
+
+        ctx.imageSmoothingEnabled = false; // ✅ Nearest neighbor
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+      };
+    },
+    [zoomLevel]
+  );
+
+  useEffect(() => {
+    if (!selected) return;
+    drawImageToCanvas(flip ? bUrl : aUrl, canvasARef);
+    drawImageToCanvas(flip ? aUrl : bUrl, canvasBRef);
+    drawImageToCanvas(diffUrl, canvasDiffRef);
+  }, [selected, drawImageToCanvas, flip, diffUrl, aUrl, bUrl]);
 
   useEffect(() => {
     const fetchPairs = async () => {
@@ -32,15 +78,16 @@ export function EvalCompareView() {
         console.error("❌ Failed to fetch image pairs", err);
       }
     };
+
     fetchPairs();
   }, [templateId]);
 
-  const selected = imagePairs[selectedIndex];
-  const aUrl = selected ? `${API_URL}/static/sample/${selected.a}` : '';
-  const bUrl = selected ? `${API_URL}/static/sample/${selected.b}` : '';
-  const diffUrl = selected
-    ? `${API_URL}/diff_image?img1=${selected.a}&img2=${selected.b}&threshold=${tolerance}`
-    : '';
+  // 공통 zoom 핸들러
+  const handleWheelZoom = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoomLevel((prev) => Math.min(Math.max(prev + delta, 0.5), 5));
+  };
 
   return (
     <DashboardContent>
@@ -48,150 +95,62 @@ export function EvalCompareView() {
         Evaluation Compare View
       </Typography>
 
-      {/* ✅ Controls */}
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+      {/* 상단 제어 UI */}
+      <Box display="flex" gap={2} alignItems="center" sx={{ mb: 3 }}>
+        {/* Combo Box */}
         <FormControl sx={{ minWidth: 200 }}>
           <Select
-            value={imagePairs.length > 0 ? selectedIndex : ''}
+            value={selectedIndex}
             onChange={(e) => setSelectedIndex(Number(e.target.value))}
-            displayEmpty
           >
-            {imagePairs.length === 0 ? (
-              <MenuItem value="">No image pairs</MenuItem>
-            ) : (
-              imagePairs.map((pair, index) => (
-                <MenuItem key={index} value={index}>
-                  {pair.a}
-                </MenuItem>
-              ))
-            )}
+            {imagePairs.map((pair, index) => (
+              <MenuItem key={index} value={index}>
+                {pair.a}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
 
-        {/* ✅ Tolerance 입력창 */}
+        {/* Threshold 입력 */}
         <TextField
-          label="Tolerance"
+          label="Threshold"
           type="number"
-          value={tolerance}
-          onChange={(e) => setTolerance(Number(e.target.value))}
-          inputProps={{ min: 0, max: 255 }}
+          value={threshold}
+          onChange={(e) => setThreshold(Number(e.target.value))}
           sx={{ width: 120 }}
         />
 
-        {/* ✅ Swap 버튼 */}
-        <Button variant="outlined" size="large" onClick={() => setSwap(!swap)}>
-          Swap Left/Right
-        </Button>
-      </Stack>
+        {/* Flip 좌우 전환 */}
+        <IconButton onClick={() => setFlip(!flip)}>
+          <SwapHorizIcon />
+        </IconButton>
+      </Box>
 
-      {/* ✅ 이미지 비교 표시 */}
+      {/* 이미지 비교 Grid */}
       {selected && (
         <Grid container spacing={2}>
           <Grid item xs={4}>
-            <Typography variant="subtitle1">
-              {swap ? 'Image B' : 'Image A'}
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              {flip ? "Image B" : "Image A"}
             </Typography>
-            <img src={swap ? bUrl : aUrl} alt="Left" width="100%" />
+            <canvas ref={canvasARef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
           </Grid>
+
           <Grid item xs={4}>
-            <Typography variant="subtitle1">Diff</Typography>
-            <img src={diffUrl} alt="Visual difference" width="100%" />
-          </Grid>
-          <Grid item xs={4}>
-            <Typography variant="subtitle1">
-              {swap ? 'Image A' : 'Image B'}
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              {flip ? "Image A" : "Image B"}
             </Typography>
-            <img src={swap ? aUrl : bUrl} alt="Right" width="100%" />
+            <canvas ref={canvasBRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
+          </Grid>
+
+          <Grid item xs={4}>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Diff
+            </Typography>
+            <canvas ref={canvasDiffRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
           </Grid>
         </Grid>
       )}
     </DashboardContent>
   );
 }
-
-// // src/sections/eval/view/eval-compare-view.tsx
-// import { useEffect, useState } from 'react';
-// import { useParams } from 'react-router-dom';
-
-// import Box from '@mui/material/Box';
-// import Grid from '@mui/material/Grid';
-// import Typography from '@mui/material/Typography';
-// import MenuItem from '@mui/material/MenuItem';
-// import FormControl from '@mui/material/FormControl';
-// import Select from '@mui/material/Select';
-
-// import { DashboardContent } from 'src/layouts/dashboard';
-
-// const API_URL = import.meta.env.VITE_API_URL;
-
-// export function EvalCompareView() {
-//   const { id: templateId } = useParams(); // templateId from URL
-//   const [imagePairs, setImagePairs] = useState<{ a: string; b: string }[]>([]);
-//   const [selectedIndex, setSelectedIndex] = useState(0);
-
-//   useEffect(() => {
-//     const fetchPairs = async () => {
-//       try {
-//         const res = await fetch(`${API_URL}/get_image_pairs?template_id=${templateId}`);
-//         const data = await res.json();
-//         setImagePairs(data.image_pairs || []);
-//       } catch (err) {
-//         console.error("❌ Failed to fetch image pairs", err);
-//       }
-//     };
-
-//     fetchPairs();
-//   }, [templateId]);
-
-//   const selected = imagePairs[selectedIndex];
-//   const aUrl = selected ? `${API_URL}/static/sample/${selected.a}` : '';
-//   const bUrl = selected ? `${API_URL}/static/sample/${selected.b}` : '';
-//   const diffUrl = selected
-//     ? `${API_URL}/diff_image?img1=${selected.a}&img2=${selected.b}&threshold=20`
-//     : '';
-
-//   return (
-//     <DashboardContent>
-//       <Typography variant="h4" sx={{ mb: 2 }}>
-//         Evaluation Compare View
-//       </Typography>
-
-//       {/* Combo Box */}
-//       <FormControl fullWidth sx={{ maxWidth: 300, mb: 3 }}>
-//         <Select
-//           value={imagePairs.length > 0 ? selectedIndex : ''}
-//           onChange={(e) => setSelectedIndex(Number(e.target.value))}
-//           displayEmpty
-//         >
-//           {imagePairs.length === 0 ? (
-//           <MenuItem value="">No image pairs</MenuItem>
-//           ) : (
-//           imagePairs.map((pair, index) => (
-//               <MenuItem key={index} value={index}>
-//               {pair.a}
-//              </MenuItem>
-//           ))
-//           )}
-//         </Select>
-//       </FormControl>
-
-//       {/* Image Compare Grid */}
-//       {selected && (
-//         <Grid container spacing={2}>
-//           <Grid item xs={4}>
-//             <Typography variant="subtitle1">Image A</Typography>
-//             <img src={aUrl} alt="Original A version" width="100%" />
-//           </Grid>
-//           <Grid item xs={4}>
-//             <Typography variant="subtitle1">Image B</Typography>
-//             <img src={bUrl} alt="Modified B version" width="100%" />
-//           </Grid>
-//           <Grid item xs={4}>
-//             <Typography variant="subtitle1">Diff</Typography>
-//             <img src={diffUrl} alt="Visual difference between A and B" width="100%" />
-//           </Grid>
-//         </Grid>
-//       )}
-//     </DashboardContent>
-//   );
-// }
