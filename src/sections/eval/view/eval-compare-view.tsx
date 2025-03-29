@@ -11,6 +11,7 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import InputLabel from '@mui/material/InputLabel';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
@@ -22,7 +23,10 @@ export function EvalCompareView() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [threshold, setThreshold] = useState(20);
   const [flip, setFlip] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
+
+  const [zoomLevels, setZoomLevels] = useState<number[]>([0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);
+  const [zoomIndex, setZoomIndex] = useState(3); // 1.0
+  const zoomLevel = zoomLevels[zoomIndex] || 1.0;
 
   const canvasARef = useRef<HTMLCanvasElement>(null);
   const canvasBRef = useRef<HTMLCanvasElement>(null);
@@ -34,36 +38,33 @@ export function EvalCompareView() {
 
   const selected = imagePairs[selectedIndex];
 
-  const loadImage = (url: string, ref: React.MutableRefObject<HTMLImageElement | null>, callback: () => void) => {
+  const loadImage = useCallback((url: string, ref: React.MutableRefObject<HTMLImageElement | null>, callback: () => void) => {
     const img = new Image();
     img.src = url;
     img.onload = () => {
       ref.current = img;
       callback();
     };
-  };
+  }, []);
 
-  const drawToCanvas = useCallback(
-    (ref: React.RefObject<HTMLCanvasElement>, imgRef: React.MutableRefObject<HTMLImageElement | null>) => {
-      const canvas = ref.current;
-      const img = imgRef.current;
-      if (!canvas || !img) return;
+  const drawToCanvas = useCallback((ref: React.RefObject<HTMLCanvasElement>, imgRef: React.MutableRefObject<HTMLImageElement | null>) => {
+    const canvas = ref.current;
+    const img = imgRef.current;
+    if (!canvas || !img) return;
 
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-      const width = img.width * zoomLevel;
-      const height = img.height * zoomLevel;
+    const width = img.width * zoomLevel;
+    const height = img.height * zoomLevel;
 
-      canvas.width = width;
-      canvas.height = height;
+    canvas.width = width;
+    canvas.height = height;
 
-      ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-    },
-    [zoomLevel]
-  );
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(img, 0, 0, width, height);
+  }, [zoomLevel]);
 
   const renderAll = useCallback(() => {
     if (!selected) return;
@@ -72,7 +73,6 @@ export function EvalCompareView() {
     drawToCanvas(canvasDiffRef, diffImage);
   }, [selected, flip, drawToCanvas]);
 
-  // Load image pair on change
   useEffect(() => {
     if (!selected) return;
     const aUrl = `${API_URL}/static/sample/${selected.a}`;
@@ -82,9 +82,8 @@ export function EvalCompareView() {
     loadImage(aUrl, aImage, renderAll);
     loadImage(bUrl, bImage, renderAll);
     loadImage(diffUrl, diffImage, renderAll);
-  }, [selected, threshold, renderAll]);
+  }, [selected, threshold, loadImage, renderAll]);
 
-  // Fetch image pairs
   useEffect(() => {
     const fetchPairs = async () => {
       try {
@@ -98,28 +97,44 @@ export function EvalCompareView() {
     fetchPairs();
   }, [templateId]);
 
-  // Zoom on wheel
-  const handleWheelZoom = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    const newZoom = Math.min(Math.max(zoomLevel + delta, 0.5), 5);
-    setZoomLevel(newZoom);
-  };
+  useEffect(() => {
+    const fetchZoomLevels = async () => {
+      try {
+        const res = await fetch(`${API_URL}/zoom_levels`);
+        const data = await res.json();
+        setZoomLevels(data.zoom_levels || zoomLevels);
+      } catch (err) {
+        console.error("❌ Failed to fetch zoom levels", err);
+      }
+    };
+    fetchZoomLevels();
+  }, [zoomLevels]);
 
   useEffect(() => {
     renderAll();
-  }, [renderAll]);
+  }, [zoomLevel, flip, renderAll]);
+
+  const handleWheelZoom = (e: React.WheelEvent) => {
+    e.preventDefault();
+    setZoomIndex((prev) => {
+      const delta = e.deltaY > 0 ? -1 : 1;
+      const newIndex = Math.min(Math.max(prev + delta, 0), zoomLevels.length - 1);
+      return newIndex;
+    });
+  };
 
   return (
     <DashboardContent>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Evaluation Compare View
+        Image Pair Comparison
       </Typography>
 
       <Box display="flex" gap={2} alignItems="center" sx={{ mb: 3 }}>
-        <FormControl sx={{ minWidth: 200 }}>
+        <FormControl sx={{ minWidth: 200 }} variant="outlined">
+          <InputLabel id="image-select-label">Images</InputLabel>
           <Select
             value={selectedIndex}
+            label="Images"
             onChange={(e) => setSelectedIndex(Number(e.target.value))}
           >
             {imagePairs.map((pair, index) => (
@@ -131,12 +146,27 @@ export function EvalCompareView() {
         </FormControl>
 
         <TextField
-          label="Threshold"
+          label="Tolerence"
           type="number"
           value={threshold}
           onChange={(e) => setThreshold(Number(e.target.value))}
           sx={{ width: 120 }}
         />
+
+        <FormControl sx={{ minWidth: 120 }} variant="outlined">
+          <InputLabel id="zoom-level-label">Zoom</InputLabel>
+          <Select
+            value={zoomIndex}
+            label="Zoom"
+            onChange={(e) => setZoomIndex(Number(e.target.value))}
+          >
+            {zoomLevels.map((level, index) => (
+              <MenuItem key={index} value={index}>
+                {Math.round(level * 100)}%
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <IconButton onClick={() => setFlip(!flip)}>
           <SwapHorizIcon />
@@ -149,19 +179,25 @@ export function EvalCompareView() {
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {flip ? 'Image B' : 'Image A'}
             </Typography>
-            <canvas ref={canvasARef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
+            <Box sx={{ overflow: 'hidden'}}>
+              <canvas ref={canvasARef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
+            </Box>
           </Grid>
           <Grid item xs={4}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {flip ? 'Image A' : 'Image B'}
             </Typography>
-            <canvas ref={canvasBRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
+            <Box sx={{ overflow: 'hidden'}}>
+              <canvas ref={canvasBRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
+            </Box>
           </Grid>
           <Grid item xs={4}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              Diff
+              Difference
             </Typography>
-            <canvas ref={canvasDiffRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
+            <Box sx={{ overflow: 'hidden'}}>
+              <canvas ref={canvasDiffRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
+            </Box>
           </Grid>
         </Grid>
       )}

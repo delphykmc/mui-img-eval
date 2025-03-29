@@ -26,6 +26,14 @@ app.add_middleware(
 TEMPLATE_DIR = "static/eval_templates"
 
 
+# server.py
+ZOOM_LEVELS = [0.25, 0.5, 0.75, 1.0, 2.0, 4.0]
+
+@app.get("/zoom_levels")
+def get_zoom_levels():
+    return {"zoom_levels": ZOOM_LEVELS}
+
+
 @app.get("/list_templates")
 async def list_templates():
     """ 평가 템플릿 JSON 파일 목록을 반환 """
