@@ -4,10 +4,11 @@ import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
 import Typography from '@mui/material/Typography';
 import { useNavigate, useParams } from 'react-router-dom';
+import { DashboardContent } from 'src/layouts/dashboard';
 
 const DUMMY_IMAGE_COUNT = 24;
 
-export default function EvalImageGrid() {
+export function EvalImageGridView() {
   const navigate = useNavigate();
   const { id } = useParams(); // template ID 받기 (예: /eval/:id)
 
@@ -19,7 +20,7 @@ export default function EvalImageGrid() {
   };
 
   return (
-    <>
+    <DashboardContent>
       <Typography variant="h5" sx={{ mb: 3 }}>
         Images in Template {id}
       </Typography>
@@ -57,6 +58,6 @@ export default function EvalImageGrid() {
           );
         })}
       </ImageList>
-    </>
+    </DashboardContent>
   );
 }

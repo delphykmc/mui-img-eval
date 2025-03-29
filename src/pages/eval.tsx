@@ -2,8 +2,7 @@ import { Helmet } from 'react-helmet-async';
 
 import { CONFIG } from 'src/config-global';
 
-import { EvalView } from 'src/sections/eval/view';
-
+import { Outlet } from 'react-router-dom';
 // ----------------------------------------------------------------------
 
 export default function Page() {
@@ -13,7 +12,7 @@ export default function Page() {
         <title> {`Evaluation - ${CONFIG.appName}`}</title>
       </Helmet>
 
-      <EvalView />
+      <Outlet />
     </>
   );
 }

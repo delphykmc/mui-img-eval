@@ -17,7 +17,7 @@ import { PostSort } from '../post-sort';
 import { PostSearch } from '../post-search';
 
 // ----------------------------------------------------------------------
-const API_URL = "http://localhost:8000"; // FastAPI 백엔드 주소
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function EvalView() {
   const [sortBy, setSortBy] = useState('latest');

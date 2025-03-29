@@ -8,6 +8,11 @@ import { varAlpha } from 'src/theme/styles';
 import { AuthLayout } from 'src/layouts/auth';
 import { DashboardLayout } from 'src/layouts/dashboard';
 
+// Views
+import { EvalView } from 'src/sections/eval/view/eval-view';
+import { EvalCompareView } from 'src/sections/eval/view/eval-compare-view';
+import { EvalImageGridView } from 'src/sections/eval/view/eval-image-grid-view';
+
 // ----------------------------------------------------------------------
 
 export const HomePage = lazy(() => import('src/pages/home'));
@@ -16,9 +21,6 @@ export const UserPage = lazy(() => import('src/pages/user'));
 export const SignInPage = lazy(() => import('src/pages/sign-in'));
 export const ProductsPage = lazy(() => import('src/pages/products'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
-export const EvalImageListPage = lazy(() => import('src/pages/eval-image-list'));
-export const EvalEvaluatePage = lazy(() => import('src/pages/eval-evaluate'));
-
 
 // ----------------------------------------------------------------------
 
@@ -49,9 +51,15 @@ export function Router() {
         { element: <HomePage />, index: true },
         { path: 'user', element: <UserPage /> },
         { path: 'products', element: <ProductsPage /> },
-        { path: 'eval', element: <EvalPage /> },
-        { path: 'eval/:id/images', element: <EvalImageListPage /> },
-        { path: 'eval/:id/evaluate', element: <EvalEvaluatePage /> },
+        {
+          path: 'eval',
+          element: <EvalPage />,
+          children: [
+            { path: '', element: <EvalView /> },
+            { path: ':id/images', element: <EvalImageGridView /> },
+            { path: ':id/evaluate', element: <EvalCompareView /> },
+          ],
+        }
       ],
     },
     {

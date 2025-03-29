@@ -3,8 +3,10 @@ import json
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # CORS 설정 (React 프론트엔드와 연동)
 app.add_middleware(
@@ -16,7 +18,7 @@ app.add_middleware(
 )
 
 # JSON 템플릿이 저장된 디렉토리
-TEMPLATE_DIR = "eval_templates"
+TEMPLATE_DIR = "static/eval_templates"
 
 
 @app.get("/list_templates")

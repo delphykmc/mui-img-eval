@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 
-const API_URL = "http://localhost:8000";  // FastAPI 서버 주소
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function useFetchTemplates() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  console.log("✅ API_URL from env:", API_URL);
 
   useEffect(() => {
     setLoading(true);
@@ -18,7 +19,7 @@ export function useFetchTemplates() {
           setLoading(false);
           return;
         }
-
+        
         // JSON 파일별 평가 템플릿 데이터 로드
         const fetchTemplates = data.templates.map(async (filename: string) => {
           const response = await fetch(`${API_URL}/eval_templates/${filename}`);
