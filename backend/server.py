@@ -135,13 +135,6 @@ def get_image_pairs(template_id: str = Query(...)):
         print("❌ Exception occurred:", str(e))  # 추가 로그
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
-
-# @app.get("/image_pairs/{template_id}")
-# def get_image_pairs(template_id: str):
-
-
 if __name__ == "__main__":
     import uvicorn
 
