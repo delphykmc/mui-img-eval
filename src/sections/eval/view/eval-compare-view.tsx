@@ -251,18 +251,18 @@ export function EvalCompareView() {
               item
               xs={4}
               sx={{
-                maxHeight: '600px',
+                maxHeight: '800px',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                height: '600px',
+                height: '800px',
               }}
             >
               <Typography variant="subtitle1" sx={{ mb: 1 }}>
                 {i === 0 ? (flip ? 'Image B' : 'Image A') : i === 1 ? (flip ? 'Image A' : 'Image B') : 'Diff'}
               </Typography>
               <Box
-                sx={{ overflow: 'hidden', height: '100%' }}
+                sx={{ overflow: 'hidden', height: '100%'}}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -270,7 +270,7 @@ export function EvalCompareView() {
               >
                 <canvas
                   ref={ref}
-                  style={{ border: '1px solid #ccc', cursor: dragging ? 'grabbing' : 'grab' }}
+                  style={{ cursor: dragging ? 'grabbing' : 'grab' }}
                 />
               </Box>
             </Grid>

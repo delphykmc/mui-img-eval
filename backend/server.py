@@ -27,7 +27,7 @@ TEMPLATE_DIR = "static/eval_templates"
 
 
 # server.py
-ZOOM_LEVELS = [0.25, 0.5, 0.75, 1.0, 2.0, 4.0]
+ZOOM_LEVELS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0]
 
 @app.get("/zoom_levels")
 def get_zoom_levels():
