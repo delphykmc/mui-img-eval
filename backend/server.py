@@ -66,9 +66,6 @@ def generate_diff_image(img1: str = Query(...), img2: str = Query(...), threshol
         image1 = np.array(Image.open(path1).convert("RGB"))
         image2 = np.array(Image.open(path2).convert("RGB"))
 
-        print(f"📂 shape1: {image1.shape}")
-        print(f"📂 shape2: {image2.shape}")
-
         diff = np.abs(image1.astype(np.int16) - image2.astype(np.int16)).mean(axis=2)
         height, width = diff.shape
 

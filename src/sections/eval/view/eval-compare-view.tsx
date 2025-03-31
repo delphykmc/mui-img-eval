@@ -9,9 +9,9 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
+import InputLabel from '@mui/material/InputLabel';
 import IconButton from '@mui/material/IconButton';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import InputLabel from '@mui/material/InputLabel';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
@@ -23,9 +23,8 @@ export function EvalCompareView() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [threshold, setThreshold] = useState(20);
   const [flip, setFlip] = useState(false);
-
   const [zoomLevels, setZoomLevels] = useState<number[]>([0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);
-  const [zoomIndex, setZoomIndex] = useState(3); // 1.0
+  const [zoomIndex, setZoomIndex] = useState(3);
   const zoomLevel = zoomLevels[zoomIndex] || 1.0;
 
   const canvasARef = useRef<HTMLCanvasElement>(null);
@@ -38,51 +37,102 @@ export function EvalCompareView() {
 
   const selected = imagePairs[selectedIndex];
 
-  const loadImage = useCallback((url: string, ref: React.MutableRefObject<HTMLImageElement | null>, callback: () => void) => {
+  const [dragging, setDragging] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const startPoint = useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    startPoint.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragging) return;
+    const dx = e.clientX - startPoint.current.x;
+    const dy = e.clientY - startPoint.current.y;
+    setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    startPoint.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseUp = () => setDragging(false);
+  const handleMouseLeave = () => setDragging(false);
+
+  const loadImage = useCallback((url: string, ref: React.MutableRefObject<HTMLImageElement | null>, onLoad: () => void) => {
     const img = new Image();
     img.src = url;
     img.onload = () => {
       ref.current = img;
-      callback();
+      onLoad();
     };
   }, []);
 
-  const drawToCanvas = useCallback((ref: React.RefObject<HTMLCanvasElement>, imgRef: React.MutableRefObject<HTMLImageElement | null>) => {
-    const canvas = ref.current;
-    const img = imgRef.current;
-    if (!canvas || !img) return;
+  const drawToCanvas = useCallback(
+    (ref: React.RefObject<HTMLCanvasElement>, imgRef: React.MutableRefObject<HTMLImageElement | null>) => {
+      const canvas = ref.current;
+      const img = imgRef.current;
+      if (!canvas || !img) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+      requestAnimationFrame(() => {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-    const width = img.width * zoomLevel;
-    const height = img.height * zoomLevel;
+        const width = img.width * zoomLevel;
+        const height = img.height * zoomLevel;
 
-    canvas.width = width;
-    canvas.height = height;
+        const parent = canvas.parentElement;
+        if (!parent) return;
 
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(img, 0, 0, width, height);
-  }, [zoomLevel]);
+        const maxOffsetX = 0;
+        const minOffsetX = parent.clientWidth - width;
+        const maxOffsetY = 0;
+        const minOffsetY = parent.clientHeight - height;
+
+        const clampedX = Math.min(Math.max(offset.x, minOffsetX), maxOffsetX);
+        const clampedY = Math.min(Math.max(offset.y, minOffsetY), maxOffsetY);
+
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, clampedX, clampedY, width, height);
+      });
+    },
+    [zoomLevel, offset]
+  );
 
   const renderAll = useCallback(() => {
-    if (!selected) return;
     drawToCanvas(canvasARef, flip ? bImage : aImage);
     drawToCanvas(canvasBRef, flip ? aImage : bImage);
     drawToCanvas(canvasDiffRef, diffImage);
-  }, [selected, flip, drawToCanvas]);
+  }, [flip, drawToCanvas]);
+
+  const loadedCount = useRef(0);
+
+  const tryRenderAll = useCallback(() => {
+    loadedCount.current += 1;
+    if (loadedCount.current === 3) {
+      renderAll();
+      loadedCount.current = 0;
+    }
+  }, [renderAll]);
+
+  useEffect(() => {
+    setOffset({ x: 0, y: 0 });
+  }, [selected]);
 
   useEffect(() => {
     if (!selected) return;
+
     const aUrl = `${API_URL}/static/sample/${selected.a}`;
     const bUrl = `${API_URL}/static/sample/${selected.b}`;
     const diffUrl = `${API_URL}/diff_image?img1=${selected.a}&img2=${selected.b}&threshold=${threshold}`;
 
-    loadImage(aUrl, aImage, renderAll);
-    loadImage(bUrl, bImage, renderAll);
-    loadImage(diffUrl, diffImage, renderAll);
-  }, [selected, threshold, loadImage, renderAll]);
+    loadedCount.current = 0;
+    loadImage(aUrl, aImage, tryRenderAll);
+    loadImage(bUrl, bImage, tryRenderAll);
+    loadImage(diffUrl, diffImage, tryRenderAll);
+  }, [selected, threshold, loadImage, tryRenderAll]);
 
   useEffect(() => {
     const fetchPairs = async () => {
@@ -102,37 +152,50 @@ export function EvalCompareView() {
       try {
         const res = await fetch(`${API_URL}/zoom_levels`);
         const data = await res.json();
-        setZoomLevels(data.zoom_levels || zoomLevels);
+        setZoomLevels(() => data.zoom_levels || [0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);
       } catch (err) {
         console.error("❌ Failed to fetch zoom levels", err);
       }
     };
     fetchZoomLevels();
-  }, [zoomLevels]);
+  }, []);
 
   useEffect(() => {
     renderAll();
-  }, [zoomLevel, flip, renderAll]);
+  }, [zoomLevel, flip, offset, renderAll]);
 
-  const handleWheelZoom = (e: React.WheelEvent) => {
-    e.preventDefault();
-    setZoomIndex((prev) => {
-      const delta = e.deltaY > 0 ? -1 : 1;
-      const newIndex = Math.min(Math.max(prev + delta, 0), zoomLevels.length - 1);
-      return newIndex;
+  useEffect(() => {
+    const canvases = [canvasARef.current, canvasBRef.current, canvasDiffRef.current];
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoomIndex((prev) => {
+        const delta = e.deltaY > 0 ? -1 : 1;
+        const newIndex = Math.min(Math.max(prev + delta, 0), zoomLevels.length - 1);
+        return newIndex;
+      });
+    };
+
+    canvases.forEach((canvas) => {
+      if (canvas) canvas.addEventListener('wheel', handleWheel, { passive: false });
     });
-  };
+    return () => {
+      canvases.forEach((canvas) => {
+        if (canvas) canvas.removeEventListener('wheel', handleWheel);
+      });
+    };
+  }, [zoomLevels]);
 
   return (
     <DashboardContent>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Image Pair Comparison
+        Evaluation Compare View
       </Typography>
 
       <Box display="flex" gap={2} alignItems="center" sx={{ mb: 3 }}>
         <FormControl sx={{ minWidth: 200 }} variant="outlined">
           <InputLabel id="image-select-label">Images</InputLabel>
           <Select
+            labelId="image-select-label"
             value={selectedIndex}
             label="Images"
             onChange={(e) => setSelectedIndex(Number(e.target.value))}
@@ -146,16 +209,23 @@ export function EvalCompareView() {
         </FormControl>
 
         <TextField
-          label="Tolerence"
+          label="Threshold"
           type="number"
           value={threshold}
-          onChange={(e) => setThreshold(Number(e.target.value))}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            if (!Number.isNaN(val) && val >= 0 && val <= 255) {
+              setThreshold(val);
+            }
+          }}
           sx={{ width: 120 }}
+          inputProps={{ min: 0, max: 255 }}
         />
 
         <FormControl sx={{ minWidth: 120 }} variant="outlined">
-          <InputLabel id="zoom-level-label">Zoom</InputLabel>
+          <InputLabel id="zoom-select-label">Zoom</InputLabel>
           <Select
+            labelId="zoom-select-label"
             value={zoomIndex}
             label="Zoom"
             onChange={(e) => setZoomIndex(Number(e.target.value))}
@@ -175,30 +245,36 @@ export function EvalCompareView() {
 
       {selected && (
         <Grid container spacing={2}>
-          <Grid item xs={4}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              {flip ? 'Image B' : 'Image A'}
-            </Typography>
-            <Box sx={{ overflow: 'hidden'}}>
-              <canvas ref={canvasARef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
-            </Box>
-          </Grid>
-          <Grid item xs={4}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              {flip ? 'Image A' : 'Image B'}
-            </Typography>
-            <Box sx={{ overflow: 'hidden'}}>
-              <canvas ref={canvasBRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
-            </Box>
-          </Grid>
-          <Grid item xs={4}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              Difference
-            </Typography>
-            <Box sx={{ overflow: 'hidden'}}>
-              <canvas ref={canvasDiffRef} onWheel={handleWheelZoom} style={{ border: '1px solid #ccc' }} />
-            </Box>
-          </Grid>
+          {[canvasARef, canvasBRef, canvasDiffRef].map((ref, i) => (
+            <Grid
+              key={i}
+              item
+              xs={4}
+              sx={{
+                maxHeight: '600px',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '600px',
+              }}
+            >
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                {i === 0 ? (flip ? 'Image B' : 'Image A') : i === 1 ? (flip ? 'Image A' : 'Image B') : 'Diff'}
+              </Typography>
+              <Box
+                sx={{ overflow: 'hidden', height: '100%' }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+              >
+                <canvas
+                  ref={ref}
+                  style={{ border: '1px solid #ccc', cursor: dragging ? 'grabbing' : 'grab' }}
+                />
+              </Box>
+            </Grid>
+          ))}
         </Grid>
       )}
     </DashboardContent>
