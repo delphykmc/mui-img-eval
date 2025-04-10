@@ -16,7 +16,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { CompareCanvas } from 'src/layouts/components/compare-canvas';
 import { DiffCanvas } from 'src/layouts/components/diff-canvas';
 
-import { EvalQueryPopup } from 'src/components/eval/EvalQueryPopup';
+import { EvalQueryPopup } from 'src/sections/eval/eval-query';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 
 const API_URL = import.meta.env.VITE_API_URL;
