@@ -16,7 +16,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { CompareCanvas } from 'src/layouts/components/compare-canvas';
 import { DiffCanvas } from 'src/layouts/components/diff-canvas';
 
-import { EvalQueryPopup } from 'src/sections/eval/eval-query';
+import { EvalFloatingPanel } from 'src/sections/eval/eval-float-query';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -42,13 +42,8 @@ export function EvalCompareView() {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const startPoint = useRef({ x: 0, y: 0 });
 
-  const [queryAnchorEl, setQueryAnchorEl] = useState<HTMLElement | null>(null);
-  const isQueryOpen = Boolean(queryAnchorEl);
-  const toggleQueryPopup = (event: React.MouseEvent<HTMLElement>) => {
-    setQueryAnchorEl(isQueryOpen ? null : event.currentTarget);
-  };
-  const closeQueryPopup = () => setQueryAnchorEl(null);
-
+  const [showPanel, setShowPanel] = useState(false);
+  
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
     startPoint.current = { x: e.clientX, y: e.clientY };
@@ -197,16 +192,10 @@ export function EvalCompareView() {
           <SwapHorizIcon />
         </IconButton>
 
-        <IconButton onClick={toggleQueryPopup}>
+        <IconButton onClick={() => setShowPanel((prev) => !prev)} >
           <AssessmentIcon />
         </IconButton>
       </Box>
-
-      <EvalQueryPopup
-        anchorEl={queryAnchorEl}
-        open={isQueryOpen}
-        onClose={closeQueryPopup}
-      />
       
       {selected && (
         <Grid container spacing={2}>
@@ -261,6 +250,9 @@ export function EvalCompareView() {
           </Grid>
         </Grid>
       )}
+
+      <EvalFloatingPanel visible={showPanel} />
+
     </DashboardContent>
   );
 }
