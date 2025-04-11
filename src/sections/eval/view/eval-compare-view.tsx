@@ -10,16 +10,24 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import InputLabel from '@mui/material/InputLabel';
 import IconButton from '@mui/material/IconButton';
+
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 import { CompareCanvas } from 'src/layouts/components/compare-canvas';
 import { DiffCanvas } from 'src/layouts/components/diff-canvas';
-
 import { EvalFloatingPanel } from 'src/sections/eval/eval-float-query';
-import AssessmentIcon from '@mui/icons-material/Assessment';
 
 const API_URL = import.meta.env.VITE_API_URL;
+
+const canvasGridStyle = {
+  maxHeight: '800px',
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  height: '800px',
+};
 
 export function EvalCompareView() {
   const { id: templateId } = useParams();
@@ -31,7 +39,6 @@ export function EvalCompareView() {
   const [zoomIndex, setZoomIndex] = useState(3);
   const zoomLevel = zoomLevels[zoomIndex] || 1.0;
 
-  // ✅ ref → state 기반 이미지 관리
   const [aImage, setAImage] = useState<HTMLImageElement | null>(null);
   const [bImage, setBImage] = useState<HTMLImageElement | null>(null);
   const [diffImage, setDiffImage] = useState<HTMLImageElement | null>(null);
@@ -43,7 +50,14 @@ export function EvalCompareView() {
   const startPoint = useRef({ x: 0, y: 0 });
 
   const [showPanel, setShowPanel] = useState(false);
-  
+  const [scores, setScores] = useState<Record<number, Record<string, number>>>({});
+
+  const queryList = [
+    { id: 'sharpness', label: 'Sharpness', step: 5 },
+    { id: 'contrast', label: 'Contrast', step: 5 },
+    { id: 'noise', label: 'Noise', step: 3 },
+  ];
+
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
     startPoint.current = { x: e.clientX, y: e.clientY };
@@ -58,7 +72,6 @@ export function EvalCompareView() {
   };
 
   const handleMouseUp = () => setDragging(false);
-  const handleMouseLeave = () => setDragging(false);
 
   const loadImage = useCallback((url: string, setter: (img: HTMLImageElement) => void) => {
     const img = new Image();
@@ -127,13 +140,23 @@ export function EvalCompareView() {
     };
   }, [zoomLevels]);
 
-  const canvasGridStyle = {
-    maxHeight: '800px',
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-    height: '800px',
+  const handleScoreChange = (queryId: string, value: number) => {
+    setScores((prev) => ({
+      ...prev,
+      [selectedIndex]: {
+        ...prev[selectedIndex],
+        [queryId]: value,
+      },
+    }));
   };
+
+  const handleSave = () => {
+    const scoreData = scores[selectedIndex];
+    const pair = imagePairs[selectedIndex];
+    console.log(`[SAVE] index ${selectedIndex}`, { pair, scores: scoreData });
+  };
+
+  const currentScores = scores[selectedIndex] ?? {};
 
   return (
     <DashboardContent>
@@ -146,7 +169,7 @@ export function EvalCompareView() {
           <InputLabel id="image-select-label">Images</InputLabel>
           <Select
             labelId="image-select-label"
-            value={imagePairs.length > 0 ? selectedIndex : ''}
+            value={selectedIndex}
             label="Images"
             onChange={(e) => setSelectedIndex(Number(e.target.value))}
           >
@@ -192,13 +215,25 @@ export function EvalCompareView() {
           <SwapHorizIcon />
         </IconButton>
 
-        <IconButton onClick={() => setShowPanel((prev) => !prev)} >
-          <AssessmentIcon />
+        <IconButton
+          onClick={() => setShowPanel((prev) => !prev)}
+          sx={{
+            backgroundColor: showPanel ? 'rgba(0,0,0,0.08)' : 'transparent',
+            '&:hover': { backgroundColor: 'rgba(0,0,0,0.12)' },
+          }}
+        >
+          <AssessmentIcon
+            sx={{
+              color: showPanel ? 'primary.main' : 'text.secondary',
+              transition: 'color 0.2s',
+            }}
+          />
         </IconButton>
       </Box>
-      
+
       {selected && (
         <Grid container spacing={2}>
+          {/* A 영상 */}
           <Grid item xs={4} sx={canvasGridStyle}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {flip ? 'Image B' : 'Image A'}
@@ -208,14 +243,15 @@ export function EvalCompareView() {
                 image={flip ? bImage : aImage}
                 zoomLevel={zoomLevel}
                 offset={offset}
+                dragging={dragging}
                 onDragStart={handleMouseDown}
                 onDragMove={handleMouseMove}
                 onDragEnd={handleMouseUp}
-                dragging={dragging}
               />
             </Box>
           </Grid>
 
+          {/* B 영상 */}
           <Grid item xs={4} sx={canvasGridStyle}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {flip ? 'Image A' : 'Image B'}
@@ -225,34 +261,43 @@ export function EvalCompareView() {
                 image={flip ? aImage : bImage}
                 zoomLevel={zoomLevel}
                 offset={offset}
+                dragging={dragging}
                 onDragStart={handleMouseDown}
                 onDragMove={handleMouseMove}
                 onDragEnd={handleMouseUp}
-                dragging={dragging}
               />
             </Box>
           </Grid>
 
+          {/* Diff 영상 */}
           <Grid item xs={4} sx={canvasGridStyle}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Diff</Typography>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Diff
+            </Typography>
             <Box sx={{ overflow: 'hidden', height: '100%' }}>
               <DiffCanvas
                 image={diffImage}
                 zoomLevel={zoomLevel}
                 offset={offset}
                 threshold={threshold}
+                dragging={dragging}
                 onDragStart={handleMouseDown}
                 onDragMove={handleMouseMove}
                 onDragEnd={handleMouseUp}
-                dragging={dragging}
               />
             </Box>
           </Grid>
         </Grid>
       )}
 
-      <EvalFloatingPanel visible={showPanel} />
-
+      <EvalFloatingPanel
+        visible={showPanel}
+        imageId={`pair-${selectedIndex}`}
+        queryList={queryList}
+        values={currentScores}
+        onChange={handleScoreChange}
+        onSave={handleSave}
+      />
     </DashboardContent>
   );
 }
