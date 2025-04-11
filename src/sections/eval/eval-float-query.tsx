@@ -4,34 +4,34 @@ import {
   Paper,
   Slider,
   Stack,
+  Button,
   useTheme,
 } from '@mui/material';
-import { useTheme, Theme } from '@mui/material/styles';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useEffect, useRef, useState } from 'react';
+import { Theme } from '@mui/material/styles';
 
-const queryList = [
-  { id: 'sharpness', label: 'Sharpness', step: 5 },
-  { id: 'contrast', label: 'Contrast', step: 5 },
-  { id: 'noise', label: 'Noise', step: 3 },
-];
+const scoreEmojis = ['😐', '🙂', '😄'];
 
 const getMarks = (
   steps: number,
   current: number,
-  theme: Theme,
+  theme: Theme
 ) => {
   const half = Math.floor(steps / 2);
   return Array.from({ length: steps }, (_, i) => {
     const value = i - half;
+    const abs = Math.abs(value);
+    const label = scoreEmojis[abs];
     const isActive = value === current;
+
     return {
       value,
       label: (
         <Typography
           sx={{
-            fontSize: '0.75rem',
-            fontWeight: isActive ? 600 : 400,
+            fontSize: '1.25rem',
+            fontWeight: isActive ? 700 : 400,
             color: isActive
               ? theme.palette.mode === 'dark'
                 ? '#fff'
@@ -41,17 +41,32 @@ const getMarks = (
               : 'rgba(0,0,0,0.4)',
           }}
         >
-          {value === 0 ? 'EVEN' : value < 0 ? `A +${-value}` : `B +${value}`}
+          {label}
         </Typography>
       ),
     };
   });
 };
 
-export function EvalFloatingPanel({ visible }: { visible: boolean }) {
+interface EvalFloatingPanelProps {
+  visible: boolean;
+  imageId: string;
+  queryList: { id: string; label: string; step: number }[];
+  values: Record<string, number>;
+  onChange: (queryId: string, value: number) => void;
+  onSave: () => void;
+}
+
+export function EvalFloatingPanel({
+  visible,
+  imageId,
+  queryList,
+  values,
+  onChange,
+  onSave,
+}: EvalFloatingPanelProps) {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [isHover, setIsHover] = useState(false);
-  const [scores, setScores] = useState<Record<string, number>>({});
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
   const theme = useTheme();
@@ -91,89 +106,136 @@ export function EvalFloatingPanel({ visible }: { visible: boolean }) {
     };
   }, []);
 
-  const handleChange = (id: string, val: number | number[]) => {
-    setScores((prev) => ({ ...prev, [id]: val as number }));
-  };
-
   if (!visible) return null;
 
   return (
     <Paper
-      elevation={0}
+      elevation={4}
       sx={{
         position: 'fixed',
         left: position.x,
         top: position.y,
         zIndex: 3000,
         backdropFilter: 'blur(12px)',
-        backgroundColor: 'rgba(255, 255, 255, 0.75)',
+        backgroundColor: 'rgba(255,255,255,0.75)',
         border: '1px solid rgba(255,255,255,0.3)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
         borderRadius: 2,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
         p: 2,
         width: 'auto',
-        minWidth: 280,
-        maxWidth: 360,
+        minWidth: 400,
+        maxWidth: 800,
         userSelect: 'none',
       }}
     >
       <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
         onMouseDown={handleMouseDown}
         onMouseEnter={() => setIsHover(true)}
         onMouseLeave={() => setIsHover(false)}
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          cursor: dragging.current
-            ? 'grabbing'
-            : isHover
-            ? 'grab'
-            : 'default',
+          cursor: dragging.current ? 'grabbing' : isHover ? 'grab' : 'default',
           mb: 2,
         }}
       >
-        <DragIndicatorIcon fontSize="small" sx={{ mr: 1 }} />
-        <Typography variant="subtitle1">평가 항목</Typography>
+        <Box display="flex" alignItems="center">
+          <DragIndicatorIcon fontSize="small" sx={{ mr: 1 }} />
+          <Typography variant="subtitle1">Query</Typography>
+        </Box>
+
+        <Button size="small" onClick={onSave} variant="contained"
+          sx={{
+            backgroundColor: 'rgba(0,0,0,0.75)',
+            color: '#fff',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            '&:hover': {
+              backgroundColor: 'rgba(0,0,0,0.9)',
+            },
+          }}
+        >
+          Save
+        </Button>
       </Box>
 
       <Stack spacing={3}>
         {queryList.map((q) => {
           const half = Math.floor(q.step / 2);
-          const currentValue = scores[q.id] ?? 0;
+          const current = values[q.id] ?? undefined;
 
           return (
             <Box key={q.id} sx={{ px: 2 }}>
-              <Typography variant="body2" gutterBottom>
-                {q.label}
-              </Typography>
-              <Slider
-                value={currentValue}
-                onChange={(e, val) => handleChange(q.id, val)}
-                step={1}
-                min={-half}
-                max={half}
-                marks={getMarks(q.step, currentValue, theme)}
-                sx={{
-                  color: 'rgba(0,0,0,0.87)',
-                  '& .MuiSlider-track': {
-                    border: 'none',
-                  },
-                  '& .MuiSlider-thumb': {
-                    width: 24,
-                    height: 24,
-                    backgroundColor: '#fff',
-                    '&::before': {
-                      boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
+              <Box display="flex" alignItems="center" mb={1} gap={1}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    bgcolor: current !== undefined ? 'success.main' : 'grey.400',
+                  }}
+                />
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {q.label}
+                </Typography>
+              </Box>
+
+              <Box display="flex" alignItems="center" gap={1} px={1}>
+                <Typography
+                  sx={{
+                    fontSize: '1.125rem',
+                    fontWeight: 700,
+                    minWidth: 30,
+                    textAlign: 'center',
+                    color: 'text.primary',
+                    transform: 'translateY(-10px)',
+                  }}
+                >
+                  A
+                </Typography>
+
+                <Slider
+                  value={current ?? 0}
+                  onChange={(e, val) => onChange(q.id, val as number)}
+                  step={1}
+                  min={-half}
+                  max={half}
+                  marks={getMarks(q.step, current ?? 0, theme)}
+                  sx={{
+                    flex: 1,
+                    color: 'rgba(0,0,0,0.87)',
+                    mt: 1, // 슬라이더와 마크 간 보정
+                    '& .MuiSlider-track': { border: 'none' },
+                    '& .MuiSlider-thumb': {
+                      width: 24,
+                      height: 24,
+                      backgroundColor: '#fff',
+                      '&::before': {
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
+                      },
+                      '&:hover, &.Mui-focusVisible, &.Mui-active': {
+                        boxShadow: 'none',
+                      },
                     },
-                    '&:hover, &.Mui-focusVisible, &.Mui-active': {
-                      boxShadow: 'none',
+                    '& .MuiSlider-markLabel': {
+                      fontSize: '0.85rem'
                     },
-                  },
-                  '& .MuiSlider-markLabel': {
-                    mt: 2,
-                  },
-                }}
-              />
+                  }}
+                />
+
+                <Typography
+                  sx={{
+                    fontSize: '1.125rem',
+                    fontWeight: 700,
+                    minWidth: 30,
+                    textAlign: 'center',
+                    color: 'text.primary',
+                    transform: 'translateY(-10px)',
+                  }}
+                >
+                  B
+                </Typography>
+              </Box>
             </Box>
           );
         })}
