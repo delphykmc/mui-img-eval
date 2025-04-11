@@ -79,7 +79,11 @@ export function DiffCanvas({
         onMouseMove={onDragMove}
         onMouseUp={onDragEnd}
         onMouseLeave={onDragEnd}
-        style={{ width: '100%', height: '100%', cursor: dragging ? 'grabbing' : 'grab' }}
+        style={{ 
+          borderRadius: 15,
+          width: '100%', 
+          height: '100%', 
+          cursor: dragging ? 'grabbing' : 'grab' }}
       />
     </div>
   );
