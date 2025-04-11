@@ -224,7 +224,7 @@ export function EvalCompareView() {
         >
           <AssessmentIcon
             sx={{
-              color: showPanel ? 'primary.main' : 'text.secondary',
+              color: showPanel ? 'rgba(33,33,33,0.87)' : 'rgba(0,0,0,0.4)',
               transition: 'color 0.2s',
             }}
           />
@@ -238,7 +238,16 @@ export function EvalCompareView() {
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {flip ? 'Image B' : 'Image A'}
             </Typography>
-            <Box sx={{ overflow: 'hidden', height: '100%' }}>
+            <Box sx={{
+              borderRadius: 3,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+              height: '100%',
+              backgroundColor: 'rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(8px)',
+              p: 1,
+              }}
+            >
               <CompareCanvas
                 image={flip ? bImage : aImage}
                 zoomLevel={zoomLevel}
@@ -256,7 +265,16 @@ export function EvalCompareView() {
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {flip ? 'Image A' : 'Image B'}
             </Typography>
-            <Box sx={{ overflow: 'hidden', height: '100%' }}>
+            <Box sx={{
+              borderRadius: 3,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+              height: '100%',
+              backgroundColor: 'rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(8px)',
+              p: 1,
+              }}
+            >
               <CompareCanvas
                 image={flip ? aImage : bImage}
                 zoomLevel={zoomLevel}
@@ -274,7 +292,16 @@ export function EvalCompareView() {
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               Diff
             </Typography>
-            <Box sx={{ overflow: 'hidden', height: '100%' }}>
+            <Box sx={{
+              borderRadius: 3,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+              height: '100%',
+              backgroundColor: 'rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(8px)',
+              p: 1,
+              }}
+            >              
               <DiffCanvas
                 image={diffImage}
                 zoomLevel={zoomLevel}
