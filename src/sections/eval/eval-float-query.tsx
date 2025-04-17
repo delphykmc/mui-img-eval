@@ -11,7 +11,7 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useEffect, useRef, useState } from 'react';
 import { Theme } from '@mui/material/styles';
 
-const scoreEmojis = ['😐', '🙂', '😄'];
+const scoreEmojis = ['🤔', '⭐', '💥 '];
 
 const getMarks = (
   steps: number,
@@ -204,7 +204,7 @@ export function EvalFloatingPanel({
                   sx={{
                     flex: 1,
                     color: 'rgba(0,0,0,0.87)',
-                    mt: 1, // 슬라이더와 마크 간 보정
+                    mt: 0, // 슬라이더와 마크 간 보정
                     '& .MuiSlider-track': { border: 'none' },
                     '& .MuiSlider-thumb': {
                       width: 24,
@@ -218,6 +218,7 @@ export function EvalFloatingPanel({
                       },
                     },
                     '& .MuiSlider-markLabel': {
+                      // transform: 'translateY(-10px)',
                       fontSize: '0.85rem'
                     },
                   }}
