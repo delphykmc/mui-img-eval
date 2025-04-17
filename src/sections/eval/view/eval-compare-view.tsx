@@ -29,70 +29,6 @@ const canvasGridStyle = {
   height: '800px',
 };
 
-const loadSavedScores = useCallback(async () => {
-  try {
-    const res = await fetch(`${API_URL}/load_evaluation?template_id=${templateId}&user_id=${USER_ID}`);
-    const data = await res.json();
-    if (data?.results) {
-      const loadedScores: Record<number, Record<string, number>> = {};
-      imagePairs.forEach((pair, idx) => {
-        if (data.results[pair.a]) {
-          loadedScores[idx] = data.results[pair.a];
-        }
-      });
-      setScores(loadedScores);
-    }
-  } catch (err) {
-    console.warn("ℹ️ No existing evaluation found.");
-  }
-}, [templateId, imagePairs]);
-
-useEffect(() => {
-  const fetchTemplate = async () => {
-    const res = await fetch(`${API_URL}/eval_template_detail?template_id=${templateId}`);
-    const data = await res.json();
-    setImagePairs(data.image_pairs || []);
-    setQueryList(data.query || []);
-  };
-  fetchTemplate();
-}, [templateId]);
-
-useEffect(() => {
-  if (imagePairs.length > 0) {
-    loadSavedScores();
-  }
-}, [imagePairs, loadSavedScores]);
-
-const currentScores = scores[selectedIndex] ?? {};
-
-const handleSave = async () => {
-  const resultData: Record<string, Record<string, number>> = {};
-  imagePairs.forEach((pair, idx) => {
-    if (scores[idx]) {
-      resultData[pair.a] = scores[idx];
-    }
-  });
-
-  const payload = {
-    template_id: templateId,
-    user_id: USER_ID,
-    created_at: new Date().toISOString(),
-    results: resultData,
-  };
-
-  try {
-    const res = await fetch(`${API_URL}/save_evaluation`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const json = await res.json();
-    console.log('[SAVE SUCCESS]', json);
-  } catch (err) {
-    console.error('[SAVE ERROR]', err);
-  }
-};
-
 export function EvalCompareView() {
   const { id: templateId } = useParams();
   const [imagePairs, setImagePairs] = useState<{ a: string; b: string }[]>([]);
@@ -138,20 +74,40 @@ export function EvalCompareView() {
     img.onload = () => setter(img);
     img.src = url;
   }, []);
-
+  
+  const loadSavedScores = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/load_evaluation?template_id=${templateId}&user_id=${USER_ID}`);
+      const data = await res.json();
+      if (data?.results) {
+        const loadedScores: Record<number, Record<string, number>> = {};
+        imagePairs.forEach((pair, idx) => {
+          if (data.results[pair.a]) {
+            loadedScores[idx] = data.results[pair.a];
+          }
+        });
+        setScores(loadedScores);
+      }
+    } catch (err) {
+      console.warn("ℹ️ No existing evaluation found.");
+    }
+  }, [templateId, imagePairs]);
+    
   useEffect(() => {
     const fetchTemplate = async () => {
-      try {
-        const res = await fetch(`${API_URL}/eval_template_detail?template_id=${templateId}`);
-        const data = await res.json();
-        setImagePairs(data.image_pairs || []);
-        setQueryList(data.query || []);
-      } catch (err) {
-        console.error('❌ Failed to fetch template detail', err);
-      }
+      const res = await fetch(`${API_URL}/eval_template_detail?template_id=${templateId}`);
+      const data = await res.json();
+      setImagePairs(data.image_pairs || []);
+      setQueryList(data.query || []);
     };
     fetchTemplate();
   }, [templateId]);
+  
+  useEffect(() => {
+    if (imagePairs.length > 0) {
+      loadSavedScores();
+    }
+  }, [imagePairs, loadSavedScores]);
 
   useEffect(() => {
     setOffset({ x: 0, y: 0 });
@@ -204,15 +160,37 @@ export function EvalCompareView() {
       },
     }));
   };
-
-  const handleSave = () => {
-    const scoreData = scores[selectedIndex];
-    const pair = imagePairs[selectedIndex];
-    console.log(`[SAVE] index ${selectedIndex}`, { pair, scores: scoreData });
-  };
-
+  
   const currentScores = scores[selectedIndex] ?? {};
-
+  
+  const handleSave = async () => {
+    const resultData: Record<string, Record<string, number>> = {};
+    imagePairs.forEach((pair, idx) => {
+      if (scores[idx]) {
+        resultData[pair.a] = scores[idx];
+      }
+    });
+  
+    const payload = {
+      template_id: templateId,
+      user_id: USER_ID,
+      created_at: new Date().toISOString(),
+      results: resultData,
+    };
+  
+    try {
+      const res = await fetch(`${API_URL}/save_evaluation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      console.log('[SAVE SUCCESS]', json);
+    } catch (err) {
+      console.error('[SAVE ERROR]', err);
+    }
+  };  
+  
   return (
     <DashboardContent>
       <Typography variant="h4" sx={{ mb: 2 }}>
