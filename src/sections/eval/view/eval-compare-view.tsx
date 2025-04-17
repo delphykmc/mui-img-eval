@@ -31,28 +31,46 @@ const canvasGridStyle = {
 
 export function EvalCompareView() {
   const { id: templateId } = useParams();
-  const [imagePairs, setImagePairs] = useState<{ a: string; b: string }[]>([]);
+  
+  // --- Control panel ---
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [threshold, setThreshold] = useState(20);
-  const [flip, setFlip] = useState(false);
-  const [zoomLevels, setZoomLevels] = useState([0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);
+  const [threshold, setThreshold] = useState(5);
   const [zoomIndex, setZoomIndex] = useState(3);
-  const zoomLevel = zoomLevels[zoomIndex] || 1.0;
+  const [flip, setFlip] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+
+  // ---------------  Image event --------------- 
+  const [imagePairs, setImagePairs] = useState<{ a: string; b: string }[]>([]);
+  const selected = imagePairs[selectedIndex]
 
   const [aImage, setAImage] = useState<HTMLImageElement | null>(null);
   const [bImage, setBImage] = useState<HTMLImageElement | null>(null);
-  const [diffImage, setDiffImage] = useState<HTMLImageElement | null>(null);
+  const [diffImage, setDiffImage] = useState<HTMLImageElement | null>(null);   
 
-  const [queryList, setQueryList] = useState<any[]>([]);
-  const [scores, setScores] = useState<Record<number, Record<string, number>>>({});
-  const [showPanel, setShowPanel] = useState(false);
+  const loadImage = useCallback((url: string, setter: (img: HTMLImageElement) => void) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => setter(img);
+    img.src = url;
+  }, []);
 
-  const selected = imagePairs[selectedIndex];
+  useEffect(() => {
+    if (!selected || !templateId) return;
 
+    const aUrl = `${API_URL}/get_image?template_id=${templateId}&filename=${selected.a}`;
+    const bUrl = `${API_URL}/get_image?template_id=${templateId}&filename=${selected.b}`;
+    const diffUrl = `${API_URL}/diff_image?template_id=${templateId}&img1=${selected.a}&img2=${selected.b}&threshold=${threshold}`;
+
+    loadImage(aUrl, setAImage);
+    loadImage(bUrl, setBImage);
+    loadImage(diffUrl, setDiffImage);
+  }, [selected, threshold, templateId, loadImage]);
+
+  // ---------------  Mouse event --------------- 
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const startPoint = useRef({ x: 0, y: 0 });
-
+  
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
     startPoint.current = { x: e.clientX, y: e.clientY };
@@ -67,63 +85,14 @@ export function EvalCompareView() {
   };
 
   const handleMouseUp = () => setDragging(false);
-
-  const loadImage = useCallback((url: string, setter: (img: HTMLImageElement) => void) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => setter(img);
-    img.src = url;
-  }, []);
-
-  const loadSavedScores = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/load_evaluation?template_id=${templateId}&user_id=${USER_ID}`);
-      const data = await res.json();
-      if (data?.results) {
-        const loadedScores: Record<number, Record<string, number>> = {};
-        imagePairs.forEach((pair, idx) => {
-          if (data.results[pair.a]) {
-            loadedScores[idx] = data.results[pair.a];
-          }
-        });
-        setScores(loadedScores);
-      }
-    } catch (err) {
-      console.warn("ℹ️ No existing evaluation found for this user/template.");
-    }
-  }, [templateId, imagePairs]);
-
-  useEffect(() => {
-    const fetchTemplate = async () => {
-      const res = await fetch(`${API_URL}/eval_template_detail?template_id=${templateId}`);
-      const data = await res.json();
-      setImagePairs(data.image_pairs || []);
-      setQueryList(data.query || []);
-    };
-    fetchTemplate();    
-  }, [templateId]);
-
-  useEffect(() => {
-    if (imagePairs.length > 0) {
-      loadSavedScores(); // now safe
-    }
-  }, [imagePairs, loadSavedScores]);
-
+  
   useEffect(() => {
     setOffset({ x: 0, y: 0 });
   }, [selected]);
 
-  useEffect(() => {
-    if (!selected || !templateId) return;
-
-    const aUrl = `${API_URL}/get_image?template_id=${templateId}&filename=${selected.a}`;
-    const bUrl = `${API_URL}/get_image?template_id=${templateId}&filename=${selected.b}`;
-    const diffUrl = `${API_URL}/diff_image?template_id=${templateId}&img1=${selected.a}&img2=${selected.b}&threshold=${threshold}`;
-
-    loadImage(aUrl, setAImage);
-    loadImage(bUrl, setBImage);
-    loadImage(diffUrl, setDiffImage);
-  }, [selected, threshold, templateId, loadImage]);
+  // ---------------  Zoom event --------------- 
+  const [zoomLevels, setZoomLevels] = useState([0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);  
+  const zoomLevel = zoomLevels[zoomIndex] || 1.0;
 
   useEffect(() => {
     const fetchZoomLevels = async () => {
@@ -151,6 +120,11 @@ export function EvalCompareView() {
     return () => canvases.forEach((canvas) => canvas.removeEventListener('wheel', handleWheel));
   }, [zoomLevels]);
 
+  // --------------- Eval event --------------- 
+  const [queryList, setQueryList] = useState<any[]>([]);
+  const [scores, setScores] = useState<Record<number, Record<string, number>>>({});  
+  const currentScores = scores[selectedIndex] ?? {};
+
   const handleScoreChange = (queryId: string, value: number) => {
     setScores((prev) => ({
       ...prev,
@@ -161,7 +135,33 @@ export function EvalCompareView() {
     }));
   };
 
-  const currentScores = scores[selectedIndex] ?? {};
+  useEffect(() => {
+    const fetchTemplate = async () => {
+      const res = await fetch(`${API_URL}/eval_template_detail?template_id=${templateId}`);
+      const data = await res.json();
+      setImagePairs(data.image_pairs || []);
+      setQueryList(data.query || []);
+      
+      const evalRes = await fetch(`${API_URL}/load_evaluation?template_id=${templateId}&user_id=${USER_ID}`);
+      const evalData = await evalRes.json();
+
+      if (evalData?.results) {
+        const ok = window.confirm("이전에 평가한 내용이 있습니다. 불러올까요?");
+        if (ok) {
+          const loadedScores: Record<number, Record<string, number>> = {};
+          (data.image_pairs || []).forEach((pair: { a: string; b: string }, idx: number) => {
+            if (evalData.results[pair.a]) {
+              loadedScores[idx] = evalData.results[pair.a];
+            }
+          });
+          setScores(loadedScores);
+        }
+      };
+    };
+    if (templateId){
+      fetchTemplate();
+    }    
+  }, [templateId]);
   
   const handleSave = async () => {
     const resultData: Record<string, Record<string, number>> = {};
@@ -198,21 +198,23 @@ export function EvalCompareView() {
       </Typography>
 
       <Box display="flex" gap={2} alignItems="center" sx={{ mb: 3 }}>
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel id="image-select-label">Images</InputLabel>
-          <Select
-            labelId="image-select-label"
-            value={selectedIndex}
-            label="Images"
-            onChange={(e) => setSelectedIndex(Number(e.target.value))}
-          >
-            {imagePairs.map((pair, index) => (
-              <MenuItem key={index} value={index}>
-                {pair.a}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        {imagePairs.length > 0 && (
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel id="image-select-label">Images</InputLabel>
+            <Select
+              labelId="image-select-label"
+              value={selectedIndex}
+              label="Images"
+              onChange={(e) => setSelectedIndex(Number(e.target.value))}
+            >
+              {imagePairs.map((pair, index) => (
+                <MenuItem key={index} value={index}>
+                  {pair.a}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
 
         <TextField
           label="Threshold"
@@ -232,7 +234,7 @@ export function EvalCompareView() {
           <InputLabel id="zoom-select-label">Zoom</InputLabel>
           <Select
             labelId="zoom-select-label"
-            value={zoomIndex}
+            value={zoomIndex < zoomLevels.length ? zoomIndex : 0}
             label="Zoom"
             onChange={(e) => setZoomIndex(Number(e.target.value))}
           >
