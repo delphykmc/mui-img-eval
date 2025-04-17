@@ -6,7 +6,7 @@
     "end_date": "03/31/2025",
     "description": "Multi Capture GN3 pre-eval",
     "image_url": "Single_Capture_Test",
-    "coverUrl": "/assets/images/cover/cover-1.webp",
+    "coverUrl": "/assets/images/cover/cover-2.webp",
     "query": [
       { "id": "y_hf", "label": "Y HF noise", "step": 3 },
       { "id": "y_lf", "label": "Y LF noise", "step": 3 },
