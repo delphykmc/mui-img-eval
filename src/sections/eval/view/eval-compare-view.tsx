@@ -10,7 +10,6 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import InputLabel from '@mui/material/InputLabel';
 import IconButton from '@mui/material/IconButton';
-
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 
@@ -35,7 +34,7 @@ export function EvalCompareView() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [threshold, setThreshold] = useState(20);
   const [flip, setFlip] = useState(false);
-  const [zoomLevels, setZoomLevels] = useState<number[]>([0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);
+  const [zoomLevels, setZoomLevels] = useState([0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);
   const [zoomIndex, setZoomIndex] = useState(3);
   const zoomLevel = zoomLevels[zoomIndex] || 1.0;
 
@@ -43,20 +42,15 @@ export function EvalCompareView() {
   const [bImage, setBImage] = useState<HTMLImageElement | null>(null);
   const [diffImage, setDiffImage] = useState<HTMLImageElement | null>(null);
 
+  const [queryList, setQueryList] = useState<any[]>([]);
+  const [scores, setScores] = useState<Record<number, Record<string, number>>>({});
+  const [showPanel, setShowPanel] = useState(false);
+
   const selected = imagePairs[selectedIndex];
 
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const startPoint = useRef({ x: 0, y: 0 });
-
-  const [showPanel, setShowPanel] = useState(false);
-  const [scores, setScores] = useState<Record<number, Record<string, number>>>({});
-
-  const queryList = [
-    { id: 'sharpness', label: 'Sharpness', step: 5 },
-    { id: 'contrast', label: 'Contrast', step: 5 },
-    { id: 'noise', label: 'Noise', step: 3 },
-  ];
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
@@ -75,45 +69,47 @@ export function EvalCompareView() {
 
   const loadImage = useCallback((url: string, setter: (img: HTMLImageElement) => void) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => setter(img);
     img.src = url;
   }, []);
+
+  useEffect(() => {
+    const fetchTemplate = async () => {
+      try {
+        const res = await fetch(`${API_URL}/eval_template_detail?template_id=${templateId}`);
+        const data = await res.json();
+        setImagePairs(data.image_pairs || []);
+        setQueryList(data.query || []);
+      } catch (err) {
+        console.error('❌ Failed to fetch template detail', err);
+      }
+    };
+    fetchTemplate();
+  }, [templateId]);
 
   useEffect(() => {
     setOffset({ x: 0, y: 0 });
   }, [selected]);
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selected || !templateId) return;
 
-    const aUrl = `${API_URL}/static/sample/${selected.a}`;
-    const bUrl = `${API_URL}/static/sample/${selected.b}`;
-    const diffUrl = `${API_URL}/diff_image?img1=${selected.a}&img2=${selected.b}&threshold=${threshold}`;
+    const aUrl = `${API_URL}/get_image?template_id=${templateId}&filename=${selected.a}`;
+    const bUrl = `${API_URL}/get_image?template_id=${templateId}&filename=${selected.b}`;
+    const diffUrl = `${API_URL}/diff_image?template_id=${templateId}&img1=${selected.a}&img2=${selected.b}&threshold=${threshold}`;
 
     loadImage(aUrl, setAImage);
     loadImage(bUrl, setBImage);
     loadImage(diffUrl, setDiffImage);
-  }, [selected, threshold, loadImage]);
-
-  useEffect(() => {
-    const fetchPairs = async () => {
-      try {
-        const res = await fetch(`${API_URL}/get_image_pairs?template_id=${templateId}`);
-        const data = await res.json();
-        setImagePairs(data.image_pairs || []);
-      } catch (err) {
-        console.error('❌ Failed to fetch image pairs', err);
-      }
-    };
-    fetchPairs();
-  }, [templateId]);
+  }, [selected, threshold, templateId, loadImage]);
 
   useEffect(() => {
     const fetchZoomLevels = async () => {
       try {
         const res = await fetch(`${API_URL}/zoom_levels`);
         const data = await res.json();
-        setZoomLevels(() => data.zoom_levels || [0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);
+        setZoomLevels(data.zoom_levels || [0.25, 0.5, 0.75, 1.0, 2.0, 4.0]);
       } catch (err) {
         console.error('❌ Failed to fetch zoom levels', err);
       }
@@ -130,14 +126,8 @@ export function EvalCompareView() {
         return Math.min(Math.max(prev + delta, 0), zoomLevels.length - 1);
       });
     };
-    canvases.forEach((canvas) => {
-      canvas.addEventListener('wheel', handleWheel, { passive: false });
-    });
-    return () => {
-      canvases.forEach((canvas) => {
-        canvas.removeEventListener('wheel', handleWheel);
-      });
-    };
+    canvases.forEach((canvas) => canvas.addEventListener('wheel', handleWheel, { passive: false }));
+    return () => canvases.forEach((canvas) => canvas.removeEventListener('wheel', handleWheel));
   }, [zoomLevels]);
 
   const handleScoreChange = (queryId: string, value: number) => {
@@ -165,7 +155,7 @@ export function EvalCompareView() {
       </Typography>
 
       <Box display="flex" gap={2} alignItems="center" sx={{ mb: 3 }}>
-        <FormControl sx={{ minWidth: 200 }} variant="outlined">
+        <FormControl sx={{ minWidth: 200 }}>
           <InputLabel id="image-select-label">Images</InputLabel>
           <Select
             labelId="image-select-label"
@@ -195,7 +185,7 @@ export function EvalCompareView() {
           inputProps={{ min: 0, max: 255 }}
         />
 
-        <FormControl sx={{ minWidth: 120 }} variant="outlined">
+        <FormControl sx={{ minWidth: 120 }}>
           <InputLabel id="zoom-select-label">Zoom</InputLabel>
           <Select
             labelId="zoom-select-label"
@@ -222,95 +212,63 @@ export function EvalCompareView() {
             '&:hover': { backgroundColor: 'rgba(0,0,0,0.12)' },
           }}
         >
-          <AssessmentIcon
-            sx={{
-              color: showPanel ? 'rgba(33,33,33,0.87)' : 'rgba(0,0,0,0.4)',
-              transition: 'color 0.2s',
-            }}
-          />
+          <AssessmentIcon />
         </IconButton>
       </Box>
 
       {selected && (
         <Grid container spacing={2}>
-          {/* A 영상 */}
+          {/* A */}
           <Grid item xs={4} sx={canvasGridStyle}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {flip ? 'Image B' : 'Image A'}
             </Typography>
-            <Box sx={{
-              borderRadius: 3,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-              height: '100%',
-              backgroundColor: 'rgba(255,255,255,0.85)',
-              backdropFilter: 'blur(8px)',
-              p: 1,
-              }}
-            >
+            <Box sx={{ overflow: 'hidden', height: '100%' }}>
               <CompareCanvas
                 image={flip ? bImage : aImage}
                 zoomLevel={zoomLevel}
                 offset={offset}
-                dragging={dragging}
                 onDragStart={handleMouseDown}
                 onDragMove={handleMouseMove}
                 onDragEnd={handleMouseUp}
+                dragging={dragging}
               />
             </Box>
           </Grid>
 
-          {/* B 영상 */}
+          {/* B */}
           <Grid item xs={4} sx={canvasGridStyle}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {flip ? 'Image A' : 'Image B'}
             </Typography>
-            <Box sx={{
-              borderRadius: 3,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-              height: '100%',
-              backgroundColor: 'rgba(255,255,255,0.85)',
-              backdropFilter: 'blur(8px)',
-              p: 1,
-              }}
-            >
+            <Box sx={{ overflow: 'hidden', height: '100%' }}>
               <CompareCanvas
                 image={flip ? aImage : bImage}
                 zoomLevel={zoomLevel}
                 offset={offset}
-                dragging={dragging}
                 onDragStart={handleMouseDown}
                 onDragMove={handleMouseMove}
                 onDragEnd={handleMouseUp}
+                dragging={dragging}
               />
             </Box>
           </Grid>
 
-          {/* Diff 영상 */}
+          {/* Diff */}
           <Grid item xs={4} sx={canvasGridStyle}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               Diff
             </Typography>
-            <Box sx={{
-              borderRadius: 3,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-              height: '100%',
-              backgroundColor: 'rgba(255,255,255,0.85)',
-              backdropFilter: 'blur(8px)',
-              p: 1,
-              }}
-            >              
+            <Box sx={{ overflow: 'hidden', height: '100%' }}>
               <DiffCanvas
                 image={diffImage}
                 zoomLevel={zoomLevel}
                 offset={offset}
                 threshold={threshold}
-                dragging={dragging}
                 onDragStart={handleMouseDown}
                 onDragMove={handleMouseMove}
                 onDragEnd={handleMouseUp}
+                dragging={dragging}
               />
             </Box>
           </Grid>
