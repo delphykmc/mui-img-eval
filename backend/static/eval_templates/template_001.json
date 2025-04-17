@@ -1,22 +1,20 @@
-[
-  {
-    "template_id": "001",
-    "template_name": "Single Capture (2024)",
-    "start_date": "03/01/2025",
-    "end_date": "03/31/2025",
-    "description": "Single Capture GN3 pre-eval",
-    "image_url": "Single_Capture_Test",
-    "coverUrl": "/assets/images/cover/cover-1.webp",
-    "query": [
-      { "id": "y_hf", "label": "Y HF noise", "step": 3 },
-      { "id": "y_lf", "label": "Y LF noise", "step": 3 },
-      { "id": "c_hf", "label": "UV HF noise", "step": 3 },    
-      { "id": "c_lf", "label": "UV LF noise", "step": 3 },
-      { "id": "tone", "label": "Contrast", "step": 3 },
-      { "id": "sharp", "label": "Sharp", "step": 3 }
-    ],
-    "created_at": "03/10/2025",
-    "updated_at": "03/11/2025",
-    "created_by": "delphykmc@gmail.com"
-  }
-]
+{
+  "template_id": "001",
+  "template_name": "Single Capture (2024)",
+  "start_date": "03/01/2025",
+  "end_date": "03/31/2025",
+  "description": "Single Capture GN3 pre-eval",
+  "image_url": "Single_Capture_Test",
+  "coverUrl": "/assets/images/cover/cover-1.webp",
+  "query": [
+    { "id": "y_hf", "label": "Y HF noise", "step": 3 },
+    { "id": "y_lf", "label": "Y LF noise", "step": 3 },
+    { "id": "c_hf", "label": "UV HF noise", "step": 3 },    
+    { "id": "c_lf", "label": "UV LF noise", "step": 3 },
+    { "id": "tone", "label": "Contrast", "step": 3 },
+    { "id": "sharp", "label": "Sharp", "step": 3 }
+  ],
+  "created_at": "03/10/2025",
+  "updated_at": "03/11/2025",
+  "created_by": "delphykmc@gmail.com"
+}
