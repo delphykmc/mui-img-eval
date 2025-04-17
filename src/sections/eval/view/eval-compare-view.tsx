@@ -19,7 +19,7 @@ import { DiffCanvas } from 'src/layouts/components/diff-canvas';
 import { EvalFloatingPanel } from 'src/sections/eval/eval-float-query';
 
 const API_URL = import.meta.env.VITE_API_URL;
-const USER_ID = 'unknown'
+const USER_ID = 'unknown';
 
 const canvasGridStyle = {
   maxHeight: '800px',
@@ -74,7 +74,7 @@ export function EvalCompareView() {
     img.onload = () => setter(img);
     img.src = url;
   }, []);
-  
+
   const loadSavedScores = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/load_evaluation?template_id=${templateId}&user_id=${USER_ID}`);
@@ -89,10 +89,10 @@ export function EvalCompareView() {
         setScores(loadedScores);
       }
     } catch (err) {
-      console.warn("ℹ️ No existing evaluation found.");
+      console.warn("ℹ️ No existing evaluation found for this user/template.");
     }
   }, [templateId, imagePairs]);
-    
+
   useEffect(() => {
     const fetchTemplate = async () => {
       const res = await fetch(`${API_URL}/eval_template_detail?template_id=${templateId}`);
@@ -100,12 +100,12 @@ export function EvalCompareView() {
       setImagePairs(data.image_pairs || []);
       setQueryList(data.query || []);
     };
-    fetchTemplate();
+    fetchTemplate();    
   }, [templateId]);
-  
+
   useEffect(() => {
     if (imagePairs.length > 0) {
-      loadSavedScores();
+      loadSavedScores(); // now safe
     }
   }, [imagePairs, loadSavedScores]);
 
@@ -160,7 +160,7 @@ export function EvalCompareView() {
       },
     }));
   };
-  
+
   const currentScores = scores[selectedIndex] ?? {};
   
   const handleSave = async () => {
@@ -170,14 +170,14 @@ export function EvalCompareView() {
         resultData[pair.a] = scores[idx];
       }
     });
-  
+
     const payload = {
       template_id: templateId,
       user_id: USER_ID,
       created_at: new Date().toISOString(),
       results: resultData,
     };
-  
+
     try {
       const res = await fetch(`${API_URL}/save_evaluation`, {
         method: 'POST',
@@ -190,7 +190,7 @@ export function EvalCompareView() {
       console.error('[SAVE ERROR]', err);
     }
   };  
-  
+
   return (
     <DashboardContent>
       <Typography variant="h4" sx={{ mb: 2 }}>
